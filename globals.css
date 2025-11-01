@@ -205,3 +205,13 @@ html.dark body::-webkit-scrollbar-thumb {
     scrollbar-color: #000 transparent;
   }
 }
+
+/* === Custom Animations === */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}

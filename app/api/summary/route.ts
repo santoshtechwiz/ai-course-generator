@@ -92,7 +92,9 @@ async function fetchAndGenerateSummary(videoId: string, existingTranscript?: str
     const transcriptResponse = await YoutubeService.getTranscript(videoId)
 
     if (transcriptResponse.status !== 200 || !transcriptResponse.transcript) {
-      return null
+      // Fallback: Try to generate summary from video metadata instead
+      console.log(`[Summary API] No transcript available for ${videoId}, attempting metadata fallback...`)
+      return await generateSummaryFromMetadata(videoId, chapterId)
     }
 
     transcript = transcriptResponse.transcript
@@ -113,6 +115,45 @@ async function fetchAndGenerateSummary(videoId: string, existingTranscript?: str
     return summary
   } catch (error) {
     console.error(`Error generating summary for video ID ${videoId}:`, error)
+    // Try metadata fallback on error
+    return await generateSummaryFromMetadata(videoId, chapterId)
+  }
+}
+
+/**
+ * Fallback: Generate summary from video metadata when transcript is unavailable
+ */
+async function generateSummaryFromMetadata(videoId: string, chapterId?: number): Promise<string | null> {
+  try {
+    const courseService = new CourseService()
+    
+    // Get chapter details for metadata
+    let chapterName = "Video Content"
+    if (chapterId) {
+      const chapter = await courseService.getChapterById(chapterId)
+      if (chapter?.name) {
+        chapterName = chapter.name
+      }
+    }
+
+    // Generate a basic summary from available metadata
+    const summary = `## ${chapterName}
+
+This chapter covers key concepts related to ${chapterName.toLowerCase()}.
+
+**Note:** This is a basic summary generated from the chapter title as the video transcript was not available. For a more detailed summary, please watch the video content directly.
+
+### What to expect:
+- Core concepts and fundamentals
+- Practical applications and examples
+- Key takeaways and learning objectives
+
+*Watch the video to get the complete learning experience.*`
+
+    console.log(`[Summary API] Generated metadata-based summary for ${videoId}`)
+    return summary
+  } catch (error) {
+    console.error(`[Summary API] Failed to generate metadata fallback for ${videoId}:`, error)
     return null
   }
 }

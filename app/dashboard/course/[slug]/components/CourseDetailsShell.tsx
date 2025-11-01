@@ -215,7 +215,7 @@ export function renderCourseDashboard(
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full aspect-video bg-[hsl(var(--background))] border-4 border-[hsl(var(--border))] shadow-neo overflow-hidden">
+                  <div className="w-full aspect-video bg-[hsl(var(--background))] border-4 border-[hsl(var(--border))] shadow-neo overflow-hidden" role="region" aria-label="Course video player">
                     <VideoPlayer
                       youtubeVideoId={currentVideoId || ""}
                       chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
@@ -263,7 +263,7 @@ export function renderCourseDashboard(
 
               {/* ===== CHAPTER INFO CARD ===== */}
               {!state.isTheaterMode && currentChapter && (
-                <section className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo p-4 hover:shadow-neo-hover transition-shadow duration-200 rounded-none" aria-labelledby="current-chapter-title">
+                <section className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo p-5 hover:shadow-neo-hover transition-shadow duration-200 rounded-md" aria-labelledby="current-chapter-title">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <h2 id="current-chapter-title" className="font-black text-base sm:text-lg uppercase tracking-tight text-[hsl(var(--foreground))] mb-2">
@@ -276,7 +276,7 @@ export function renderCourseDashboard(
                       )}
                     </div>
                     {videoDurations[currentVideoId || ""] && (
-                      <div className="bg-[hsl(var(--warning))] border-3 border-[hsl(var(--border))] px-3 py-2 font-black text-sm whitespace-nowrap flex-shrink-0 shadow-neo hover:shadow-neo-hover transition-shadow rounded-none" aria-label={`Duration: ${formatSeconds(videoDurations[currentVideoId || ""])}`}>
+                      <div className="bg-[hsl(var(--warning))] border-3 border-[hsl(var(--border))] px-3 py-2 font-black text-sm whitespace-nowrap flex-shrink-0 shadow-neo hover:shadow-neo-hover transition-shadow rounded-md" aria-label={`Duration: ${formatSeconds(videoDurations[currentVideoId || ""])}`}>
                         <div className="text-[hsl(var(--foreground))]">{formatSeconds(videoDurations[currentVideoId || ""])}</div>
                       </div>
                     )}
@@ -286,15 +286,15 @@ export function renderCourseDashboard(
 
               {/* Sign-in prompt for guests */}
               {!user && !state.isTheaterMode && (
-                <div className="bg-[hsl(var(--accent))]/10 border-3 border-[hsl(var(--accent))]/30 p-4 shadow-neo rounded-none hover:shadow-neo-hover transition-shadow duration-200">
+                <div className="bg-[hsl(var(--accent))]/10 border-3 border-[hsl(var(--accent))]/30 p-5 shadow-neo rounded-md hover:shadow-neo-hover transition-shadow duration-200">
                   <ContextualSignInPrompt action="continue_course" courseId={String(course.id)} />
                 </div>
               )}
 
               {/* Course details tabs */}
               {!state.isTheaterMode && (
-                <div className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover transition-shadow duration-200 rounded-none overflow-hidden">
-                  <div className="p-4">
+                <div className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover transition-shadow duration-200 rounded-md overflow-hidden">
+                  <div className="p-5">
                     <MemoizedCourseDetailsTabs
                       course={course}
                       currentChapter={currentChapter}
@@ -307,8 +307,8 @@ export function renderCourseDashboard(
 
               {/* Reviews section */}
               {!state.isTheaterMode && (
-                <div className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover transition-shadow duration-200 rounded-none overflow-hidden">
-                  <div className="p-4">
+                <div className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover transition-shadow duration-200 rounded-md overflow-hidden">
+                  <div className="p-5">
                     <ReviewsSection slug={course.slug} />
                   </div>
                 </div>
@@ -318,10 +318,10 @@ export function renderCourseDashboard(
             {/* Desktop sidebar */}
             {!state.sidebarCollapsed && !state.isTheaterMode && (
               <div className="hidden xl:block space-y-4 min-w-0">
-                <div className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo overflow-hidden sticky top-20 rounded-none hover:shadow-neo-hover transition-shadow duration-200">
+                <div className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo overflow-hidden sticky top-20 rounded-md hover:shadow-neo-hover transition-shadow duration-200">
                   {sidebarCourse.chapters.length === 0 ? (
                     <div className="p-6 text-center">
-                      <div className="w-14 h-14 mx-auto mb-3 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] flex items-center justify-center rounded-none shadow-neo-sm">
+                      <div className="w-14 h-14 mx-auto mb-3 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] flex items-center justify-center rounded-md shadow-neo-sm">
                         <BookOpen className="h-7 w-7 text-[hsl(var(--foreground))]/60" />
                       </div>
                       <h3 className="font-black text-base mb-2 uppercase text-[hsl(var(--foreground))]">No Videos Yet</h3>
@@ -381,7 +381,8 @@ export function renderCourseDashboard(
           <Button
             size="lg"
             onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="bg-[hsl(var(--warning))] hover:bg-[hsl(var(--warning))]/90 text-[hsl(var(--foreground))] font-black border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-neo-active transition-all uppercase px-6 py-3 text-sm rounded-none group"
+            aria-label="Unlock all content - view subscription options"
+            className="bg-[hsl(var(--warning))] hover:bg-[hsl(var(--warning))]/90 text-[hsl(var(--foreground))] font-black border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover active:shadow-neo-active transition-all uppercase px-6 py-3 text-sm rounded-lg group flex items-center"
           >
             <Zap className="h-4 w-4 mr-2 fill-current group-hover:scale-110 transition-transform" />
             <span className="hidden sm:inline">Unlock All Content</span>
@@ -400,25 +401,39 @@ export function renderCourseDashboard(
         totalLessons={videoPlaylist.length}
       />
 
-      {/* ===== AUTOPLAY INDICATOR ===== */}
+      {/* ===== AUTOPLAY TOGGLE (Simplified Brutalist) ===== */}
       {!state.isTheaterMode && (
-        <div className="fixed bottom-6 left-6 z-40 transition-all duration-200">
+        <div className="fixed bottom-6 left-6 z-40">
           <button
             onClick={handleAutoplayToggle}
             className={cn(
-              "px-4 py-2.5 font-black text-xs uppercase border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover hover:translate-x-[-1px] hover:translate-y-[-1px] active:shadow-neo-active transition-all rounded-none tracking-wider",
+              "group relative px-5 py-3 font-black text-xs uppercase border-3 border-[hsl(var(--border))]",
+              "shadow-neo hover:shadow-neo-hover active:shadow-neo-active",
+              "transition-all duration-200",
+              "hover:-translate-x-0.5 hover:-translate-y-0.5",
               state.autoplayMode
-                ? "bg-[hsl(var(--success))] text-[hsl(var(--foreground))]"
-                : "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]/60"
+                ? "bg-[hsl(var(--success))]"
+                : "bg-[hsl(var(--muted))]"
             )}
             aria-label={state.autoplayMode ? "Disable autoplay" : "Enable autoplay"}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
+              {/* Simple indicator dot */}
               <div className={cn(
-                "w-2 h-2 rounded-full transition-all",
-                state.autoplayMode ? "bg-[hsl(var(--foreground))] animate-pulse" : "bg-[hsl(var(--foreground))]/40"
+                "w-2.5 h-2.5 transition-all duration-300",
+                state.autoplayMode 
+                  ? "bg-[hsl(var(--foreground))] animate-pulse" 
+                  : "bg-[hsl(var(--foreground))]/30"
               )} />
-              <span>Autoplay: {state.autoplayMode ? "ON" : "OFF"}</span>
+              
+              {/* Label with icon */}
+              <div className="flex items-center gap-1.5">
+                <Play className="h-3.5 w-3.5" />
+                <span className="font-black">Autoplay:</span>
+                <span className="font-black">
+                  {state.autoplayMode ? "ON" : "OFF"}
+                </span>
+              </div>
             </div>
           </button>
         </div>
@@ -428,7 +443,7 @@ export function renderCourseDashboard(
       {state.isTheaterMode && (
         <button
           onClick={() => dispatch2({ type: "SET_THEATER_MODE", payload: false })}
-          className="fixed top-4 right-4 z-50 bg-[hsl(var(--error))] hover:bg-[hsl(var(--error))]/90 text-[hsl(var(--primary-foreground))] px-4 py-3 border-3 border-[hsl(var(--border))] shadow-neo-heavy hover:shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-neo-active transition-all font-black uppercase text-sm rounded-none group"
+          className="fixed top-4 right-4 z-50 bg-[hsl(var(--error))] hover:bg-[hsl(var(--error))]/90 text-[hsl(var(--primary-foreground))] px-4 py-3 border-3 border-[hsl(var(--border))] shadow-neo-heavy hover:shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-neo-active transition-all font-black uppercase text-sm rounded-md group"
           aria-label="Exit Theater Mode"
         >
           <div className="flex items-center gap-2">
@@ -442,7 +457,7 @@ export function renderCourseDashboard(
       {/* ===== COMPLETION CELEBRATION BANNER ===== */}
       {enhancedCourseStats.progressPercentage === 100 && !state.isTheaterMode && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
-          <div className="bg-[hsl(var(--warning))] border-3 border-[hsl(var(--border))] shadow-neo-heavy px-6 py-4 rounded-none">
+          <div className="bg-[hsl(var(--warning))] border-3 border-[hsl(var(--border))] shadow-neo-heavy px-6 py-4 rounded-md">
             <div className="flex items-center gap-3">
               <Award className="h-8 w-8 text-[hsl(var(--foreground))]" />
               <div className="flex-1">

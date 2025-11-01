@@ -51,20 +51,20 @@ import { BookmarkItem, CourseProgress } from "@/store/slices/course-slice"
 // 🎨 Optimized skeleton with reduced repaints
 const SkeletonLoader = () => (
   <div className="space-y-4 p-6 bg-[hsl(var(--background))]">
-    <div className="space-y-2">
-      <div className="h-8 w-1/3 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none shadow-neo animate-pulse" />
-      <div className="h-4 w-2/3 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none animate-pulse" />
+    <div className="space-y-3">
+      <div className="h-8 w-1/3 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-md shadow-neo animate-pulse" />
+      <div className="h-4 w-2/3 bg-[hsl(var(--muted))] border-2 border-[hsl(var(--border))] rounded-md animate-pulse" />
     </div>
     <div className="space-y-3">
-      <div className="h-32 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none shadow-neo animate-pulse" />
-      <div className="h-20 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none animate-pulse" />
-      <div className="h-20 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none animate-pulse" />
+      <div className="h-32 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-md shadow-neo animate-pulse" />
+      <div className="h-24 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-md animate-pulse" />
+      <div className="h-24 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-md animate-pulse" />
     </div>
     <div className="space-y-2">
       {[100, 100, 80].map((width, i) => (
         <div
           key={i}
-          className="h-4 bg-[hsl(var(--muted))] border-2 border-[hsl(var(--border))] rounded-none animate-pulse"
+          className="h-4 bg-[hsl(var(--muted))] border-2 border-[hsl(var(--border))] rounded-md animate-pulse"
           style={{ width: `${width}%` }}
         />
       ))}
@@ -87,18 +87,18 @@ const EmptyTabMessage = ({
       <div
         className={cn(
           "w-24 h-24 bg-[hsl(var(--muted))] border-4 border-[hsl(var(--border))]",
-          "flex items-center justify-center mx-auto rounded-none",
+          "flex items-center justify-center mx-auto rounded-md",
           "shadow-neo"
         )}
       >
         <Icon className="h-12 w-12 text-[hsl(var(--foreground))]/60" />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         <h3 className="text-xl font-black uppercase tracking-wider text-[hsl(var(--foreground))]">
           {title}
         </h3>
-        <p className="text-sm font-bold text-[hsl(var(--foreground))]/60">
+        <p className="text-sm font-bold text-[hsl(var(--foreground))]/60 leading-relaxed">
           {message}
         </p>
       </div>
@@ -332,12 +332,13 @@ export default function CourseDetailsTabs({
         onValueChange={handleTabChange} 
         className="h-full w-full flex flex-col"
       >
-        {/* 🎨 Optimized tabs list */}
+        {/* 🎨 Simplified Brutalist tabs list */}
         <LayoutGroup>
           <TabsList className={cn(
-            "grid w-full grid-cols-2 sm:grid-cols-4 h-auto bg-[var(--color-bg)]",
-            "p-2 gap-2 sm:gap-3 shadow-[2px_2px_0_var(--shadow-color)]",
-            "border-b-4 border-[var(--color-border)] rounded-none"
+            "grid w-full grid-cols-2 sm:grid-cols-4 h-auto",
+            "bg-[hsl(var(--surface))]",
+            "p-2 gap-2 sm:gap-3",
+            "border-b-3 border-[hsl(var(--border))]"
           )}>
             {tabs.map((tab) => {
               const isActive = activeTab === tab.value
@@ -351,22 +352,23 @@ export default function CourseDetailsTabs({
                   aria-label={`${tab.label} tab`}
                   aria-selected={isActive}
                   className={cn(
-                    "flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2",
-                    "px-2 sm:px-4 py-3 text-xs sm:text-sm font-black uppercase",
-                    "h-auto rounded-none border-2 transition-all duration-100",
-                    "tracking-wide cursor-pointer",
+                    "group relative flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2",
+                    "px-3 sm:px-5 py-3.5 text-xs sm:text-sm font-black uppercase",
+                    "h-auto border-3 transition-all duration-150",
+                    "tracking-wide cursor-pointer min-w-[80px] sm:min-w-[100px]",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--primary))] focus-visible:ring-offset-2",
                     isActive
-                      ? "bg-[var(--color-primary)] text-[var(--color-bg)] border-[var(--color-border)] shadow-[3px_3px_0_var(--shadow-color)]"
-                      : "border-[var(--color-border)] bg-[var(--color-bg)] text-[var(--color-text)] hover:bg-[var(--color-muted)] hover:shadow-[2px_2px_0_var(--shadow-color)]"
+                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] border-[hsl(var(--border))] shadow-neo"
+                      : "border-[hsl(var(--border))] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]/70 hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))] hover:shadow-neo hover:-translate-y-0.5"
                   )}
                 >
-                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                  <span className="hidden xs:inline">{tab.label}</span>
+                  <Icon className="h-5 w-5 sm:h-5 sm:w-5 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs">{tab.label}</span>
+                  
                   {isActive && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute inset-0 -z-10 bg-[var(--color-primary)] border-2 border-[var(--color-border)] rounded-none"
+                      className="absolute inset-0 -z-10 bg-[hsl(var(--primary))] border-3 border-[hsl(var(--border))]"
                       transition={{ type: "spring", stiffness: 500, damping: 30 }}
                     />
                   )}
@@ -392,9 +394,9 @@ export default function CourseDetailsTabs({
                 blurIntensity={canAccessSummary ? "light" : "medium"}
               >
                 <div className={cn(
-                  "p-4 sm:p-6 bg-[var(--color-bg)]",
-                  "border-3 border-[var(--color-border)] rounded-none",
-                  "shadow-[3px_3px_0_var(--shadow-color)]"
+                  "p-5 sm:p-6 bg-[var(--color-bg)]",
+                  "border-3 border-[var(--color-border)] rounded-md",
+                  "shadow-[4px_4px_0_var(--shadow-color)]"
                 )}>
                   <CourseAISummary
                     key={currentChapter.id} 
@@ -427,9 +429,9 @@ export default function CourseDetailsTabs({
                 blurIntensity={canAccessQuiz ? "light" : "medium"}
               >
                 <div className={cn(
-                  "p-4 sm:p-6 bg-[var(--color-bg)]",
-                  "border-3 border-[var(--color-border)] rounded-none",
-                  "shadow-[3px_3px_0_var(--shadow-color)]"
+                  "p-5 sm:p-6 bg-[var(--color-bg)]",
+                  "border-3 border-[var(--color-border)] rounded-md",
+                  "shadow-[4px_4px_0_var(--shadow-color)]"
                 )}>
                   <CourseDetailsQuiz
                     key={currentChapter.id}
