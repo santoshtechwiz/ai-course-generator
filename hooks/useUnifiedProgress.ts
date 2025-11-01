@@ -16,7 +16,8 @@ import { useGuestProgress } from './useGuestProgress';
 interface UnifiedProgressData {
   progress: number;
   currentChapterId: number | null;
-  completedChapters: number[];
+  // ✅ FIX: Changed from number[] to string[] to match Redux state
+  completedChapters: string[];
   isCompleted: boolean;
   playedSeconds: number;
   lastPositions: Record<number, number>;
@@ -84,6 +85,7 @@ export function useUnifiedProgress(courseId: number | string): UnifiedProgressRe
           currentChapterId: authProgress.courseProgress.videoProgress?.currentChapterId 
             ? Number(authProgress.courseProgress.videoProgress.currentChapterId) 
             : null,
+          // ✅ FIX: Keep as Strings to match Redux state and prevent progress display bugs
           completedChapters: (authProgress.courseProgress.videoProgress?.completedChapters || [])
             .map((id: string | number) => String(id)),
           isCompleted: authProgress.courseProgress.videoProgress?.isCompleted || false,

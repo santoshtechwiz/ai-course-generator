@@ -26,7 +26,19 @@ interface VideoPlayerSectionProps {
   onVideoLoadingChange?: (isLoading: boolean) => void; // New callback
 }
 
-export function VideoPlayerSection({
+/**
+ * useVideoPlayerSection Hook
+ * 
+ * Handles all video player functionality including:
+ * - Video playback control and state management
+ * - Progress tracking with throttling
+ * - PiP (Picture-in-Picture) mode
+ * - Theater mode toggling
+ * - Bookmark seeking
+ * - Video loading states
+ * - Chapter completion on video end
+ */
+export function useVideoPlayerSection({
   course,
   currentChapter,
   currentIndex,

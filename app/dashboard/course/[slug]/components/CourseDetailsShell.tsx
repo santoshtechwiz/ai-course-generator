@@ -1,14 +1,11 @@
 import { FullCourseType, FullChapterType } from "@/app/types/course-types";
-import MobilePlaylistCount from "@/components/course/MobilePlaylistCount";
 import { GuestProgressIndicator, ContextualSignInPrompt } from "@/components/guest";
 import { Button } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { setCurrentVideoApi } from "@/store/slices/course-slice";
-import { formatDuration } from "date-fns";
-import { BookOpen, Clock, Play, CheckCircle, Menu, X, Star, Zap, ChevronDown, Award, TrendingUp } from "lucide-react";
+import { BookOpen, Play, X, Star, Zap, Award, TrendingUp } from "lucide-react";
 import { User } from "next-auth";
 import React from "react";
-import ActionButtons from "./ActionButtons";
 import CertificateModal from "./CertificateModal";
 import MobilePlaylistOverlay from "./MobilePlaylistOverlay";
 import ReviewsSection from "./ReviewsSection";
@@ -18,6 +15,10 @@ import { BookmarkData } from "./video/types";
 import VideoGenerationSection from "./VideoGenerationSection";
 import VideoNavigationSidebar from "./ChapterPlaylist"
 import CourseDetailsTabs from "./CourseDetailsTabs";
+// ✅ PHASE 2: Extracted components
+import { CourseHeader } from "./CourseHeader";
+import { SharedCourseBanner } from "./SharedCourseBanner";
+import { MobilePlaylistToggle } from "./MobilePlaylistToggle";
 
 const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
 
@@ -87,7 +88,6 @@ export function renderCourseDashboard(
   handleChapterComplete: (chapterId: number) => Promise<void>,
   progressLoading: boolean,
   chapterLastPositions: Record<string, number>,
-  ChapterProgressBar: React.ComponentType<{ progress: number }>,
   router: any,
   // ✅ PHASE 3: Context object to reduce parameters
   contextData?: {
@@ -135,96 +135,19 @@ export function renderCourseDashboard(
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-foreground transition-colors duration-200">
       {/* ===== SHARED COURSE BANNER ===== */}
-      {course.isShared && (
-        <div className="bg-gradient-to-r from-cyan-400 to-blue-500 dark:from-cyan-600 dark:to-blue-700 border-b-4 border-black dark:border-white shadow-[0_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[0_4px_0px_0px_rgba(255,255,255,0.8)]">
-          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3">
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 bg-white dark:bg-gray-900 border-3 border-black dark:border-white flex items-center justify-center flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)]">
-                <BookOpen className="h-4 w-4 sm:h-5 sm:w-5 text-black dark:text-white" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm font-black text-black dark:text-white uppercase tracking-tight">
-                  🌟 Shared Course Preview
-                </p>
-                <p className="text-[10px] sm:text-xs font-bold text-black/70 dark:text-white/70">
-                  Save bookmarks • Take quizzes • Track progress
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SharedCourseBanner isShared={Boolean(course.isShared)} />
 
       {authPromptOverlay}
 
       {/* ===== STICKY HEADER ===== */}
-      <header
-        className={cn(
-          "sticky top-0 z-50 bg-white dark:bg-gray-900 border-b-4 border-black dark:border-white shadow-[0_4px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[0_4px_0px_0px_rgba(255,255,255,0.3)] transition-all duration-300"
-        )}
-      >
-        <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between gap-2 sm:gap-3 py-3">
-            {/* Left: Course info */}
-            <div className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3">
-              <div className="flex-shrink-0">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-300 to-yellow-400 dark:from-yellow-400 dark:to-yellow-500 border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] flex items-center justify-center group hover:scale-105 transition-transform">
-                  <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-black dark:text-black group-hover:rotate-6 transition-transform" />
-                </div>
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <h1
-                  className="font-black uppercase tracking-tight truncate text-black dark:text-white text-base sm:text-xl"
-                  title={course.title}
-                >
-                  {course.title}
-                </h1>
-                <div className="flex items-center gap-2 mt-0.5 text-xs font-bold text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center gap-1">
-                    <Play className="h-3 w-3 flex-shrink-0" />
-                    <span>{enhancedCourseStats.totalVideos}</span>
-                  </div>
-                  <span>•</span>
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3 flex-shrink-0" />
-                    <span>{enhancedCourseStats.totalDuration}</span>
-                  </div>
-                  {enhancedCourseStats.progressPercentage > 0 && (
-                    <>
-                      <span>•</span>
-                      <div className="flex items-center gap-1 text-lime-600 dark:text-lime-400">
-                        <CheckCircle className="h-3 w-3 flex-shrink-0" />
-                        <span className="font-black">{enhancedCourseStats.progressPercentage}%</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Right: Action buttons */}
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => dispatch2({ type: "SET_SIDEBAR_COLLAPSED", payload: !state.sidebarCollapsed })}
-                className="hidden xl:flex bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700 text-black dark:text-white font-black border-3 border-black dark:border-white shadow-[2px_2px_0px_0px_rgba(0,0,0,0.8)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all uppercase text-xs h-9 rounded-none gap-1.5"
-              >
-                {state.sidebarCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                <span className="hidden sm:inline">{state.sidebarCollapsed ? "Playlist" : "Hide"}</span>
-              </Button>
-              <ActionButtons
-                slug={course.slug}
-                isOwner={isOwner}
-                variant="compact"
-                title={course.title}
-                courseId={course.id}
-              />
-            </div>
-          </div>
-        </div>
-      </header>
+      <CourseHeader
+        course={course}
+        isShared={Boolean(course.isShared)}
+        isOwner={isOwner}
+        stats={enhancedCourseStats}
+        sidebarCollapsed={state.sidebarCollapsed}
+        onToggleSidebar={() => dispatch2({ type: "SET_SIDEBAR_COLLAPSED", payload: !state.sidebarCollapsed })}
+      />
 
       {/* Video generation section */}
       <VideoGenerationSection
@@ -240,38 +163,13 @@ export function renderCourseDashboard(
 
       {/* ===== MOBILE PLAYLIST TOGGLE ===== */}
       {!state.isTheaterMode && (
-        <div className="xl:hidden border-b-4 border-black dark:border-white bg-white dark:bg-gray-900">
-          <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5">
-            <Button
-              variant="neutral"
-              onClick={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: !state.mobilePlaylistOpen })}
-              className="w-full justify-between h-12 sm:h-14 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-800 dark:to-gray-800 border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all font-black rounded-none group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 bg-cyan-500 dark:bg-cyan-600 border-3 border-black dark:border-white flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                  <BookOpen className="h-4 w-4 text-black dark:text-white" />
-                </div>
-                <div className="text-left">
-                  <div className="font-black uppercase text-xs text-black dark:text-white">Course Content</div>
-                  <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400 line-clamp-1">
-                    {currentChapter?.title || "Select a chapter"}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <MobilePlaylistCount
-                  currentIndex={currentIndex}
-                  hasCurrentChapter={Boolean(currentChapter)}
-                  total={videoPlaylist.length}
-                />
-                <ChevronDown className={cn(
-                  "h-4 w-4 text-black dark:text-white transition-transform duration-200",
-                  state.mobilePlaylistOpen && "rotate-180"
-                )} />
-              </div>
-            </Button>
-          </div>
-        </div>
+        <MobilePlaylistToggle
+          currentChapter={currentChapter}
+          currentIndex={currentIndex}
+          totalVideos={videoPlaylist.length}
+          isOpen={state.mobilePlaylistOpen}
+          onToggle={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: !state.mobilePlaylistOpen })}
+        />
       )}
 
       <main className={cn("transition-all duration-200", state.isTheaterMode && "bg-black")}>

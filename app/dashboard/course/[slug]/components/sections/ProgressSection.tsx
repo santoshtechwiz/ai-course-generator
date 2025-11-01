@@ -17,15 +17,16 @@ interface ProgressSectionProps {
 }
 
 /**
- * ProgressSection Hook
+ * useProgressSection Hook
  * 
- * Handles all progress-related functionality:
+ * Handles all progress-related functionality including:
  * - Chapter completion tracking
- * - Progress updates
- * - Progress synchronization with backend
+ * - Progress updates to Redux and backend
+ * - Progress synchronization with server
  * - Cache invalidation events
+ * - Progress queue flushing
  */
-export function ProgressSection({
+export function useProgressSection({
   course,
   videoPlaylist,
   currentVideoId,

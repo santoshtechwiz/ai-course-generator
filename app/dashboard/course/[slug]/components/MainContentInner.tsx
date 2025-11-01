@@ -7,17 +7,18 @@ import { useToast } from "@/hooks"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 import { migratedStorage } from "@/lib/storage"
 import { flushProgress } from "@/services/enhanced-progress/client_progress_queue"
-import { useAppDispatch } from "@/store/hooks"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import { storageManager } from "@/utils/storage-manager"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useReducer, useEffect, useCallback, useMemo } from "react"
 import { useCourseModule } from "../context/CourseModuleContext"
+import { validateChapterWithVideo } from "../utils/validators"
 import CertificateModal from "./CertificateModal"
 import { renderCourseDashboard } from "./CourseDetailsShell"
-import { VideoPlayerSection } from "./sections/VideoPlayerSection"
-import { ProgressSection } from "./sections/ProgressSection"
+import { useVideoPlayerSection } from "./sections/VideoPlayerSection"
+import { useProgressSection } from "./sections/ProgressSection"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import { useVideoState } from "./video/hooks/useVideoState"
 import { BookmarkData } from "./video/types"
@@ -86,11 +87,6 @@ const stateReducer = (state: LocalComponentState, action: LocalComponentAction):
     default:
       return state
   }
-}
-
-// Helper function for chapter validation
-const validateChapter = (chapter: { id: string; videoId?: string | null }): boolean => {
-  return Boolean(chapter && chapter.id && chapter.videoId)
 }
 
 interface ModernCoursePageProps {
@@ -213,6 +209,7 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     }
   }, [course.id])
 
+
   // Memoized video playlist
   const videoPlaylist = useMemo(() => {
     const playlist: { videoId: string; chapter: FullChapterType }[] = []
@@ -255,6 +252,35 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     return playlist
   }, [course.courseUnits])
 
+  // ✅ RESTORATION: Initialize current video from persisted Redux state
+  const courseProgress = useAppSelector((state) => state.courseProgress)
+  const isVideoInitialized = useAppSelector((state) => Boolean(state.course.currentVideoId))
+
+  useEffect(() => {
+    // Only run once on mount, after Redux rehydration, and only if video not already set
+    if (isVideoInitialized) return
+    
+    const courseId = course.id.toString()
+    const persistedProgress = courseProgress.byCourseId?.[courseId]
+    const lastChapterId = persistedProgress?.videoProgress?.currentChapterId
+    
+    // Try to restore last watched chapter
+    if (lastChapterId && videoPlaylist.some(v => v.videoId === lastChapterId)) {
+      console.log(`[MainContentInner] ✅ Restoring last chapter: ${lastChapterId}`)
+      dispatch(setCurrentVideoApi(lastChapterId))
+    } 
+    // Fallback: Use initialChapterId if provided
+    else if (initialChapterId && videoPlaylist.some(v => v.videoId === initialChapterId)) {
+      console.log(`[MainContentInner] ✅ Using initialChapterId: ${initialChapterId}`)
+      dispatch(setCurrentVideoApi(initialChapterId))
+    }
+    // Fallback: Use first video in playlist
+    else if (videoPlaylist.length > 0) {
+      console.log(`[MainContentInner] ℹ️ No persisted chapter, using first video`)
+      dispatch(setCurrentVideoApi(videoPlaylist[0].videoId))
+    }
+  }, [videoPlaylist.length]) // Only depend on playlist being ready
+
   // Current chapter and navigation
   const currentChapter = useMemo(() => {
     if (!currentVideoId) return undefined
@@ -291,8 +317,8 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     dispatch2({ type: "SET_VIDEO_LOADING", payload: isLoading })
   }, [])
 
-  // ✅ PHASE 2: Extract video player logic into dedicated hook
-  const videoPlayerState = VideoPlayerSection({
+  // ✅ PHASE 2: Use proper hooks for video player and progress logic
+  const videoPlayerState = useVideoPlayerSection({
     course,
     currentChapter,
     currentIndex,
@@ -323,8 +349,8 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     handleSeekToBookmark,
   } = videoPlayerState
   
-  // ✅ PHASE 3: Extract progress tracking logic into dedicated hook
-  const progressSection = ProgressSection({
+  // ✅ PHASE 3: Use proper hook for progress tracking logic
+  const progressSection = useProgressSection({
     course,
     videoPlaylist,
     currentVideoId,
@@ -533,7 +559,7 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
           id: String(chapter.id),
         }
 
-        if (!validateChapter(safeChapter)) {
+        if (!validateChapterWithVideo(safeChapter)) {
           toast({
             title: "Invalid Chapter",
             description: "This chapter appears to be invalid.",
@@ -709,17 +735,6 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     }
   }, [videoPlaylist.length, completedChapters.length, totalCourseDuration])
 
-  // Progress bar component
-  const ChapterProgressBar = ({ progress }: { progress: number }) => (
-    <div className="w-full h-1.5 bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden">
-      <div
-        className="h-full bg-lime-500 dark:bg-lime-400 rounded-full transition-all duration-300"
-        style={{ width: `${progress}%` }}
-        aria-label={`Chapter progress: ${progress}%`}
-      />
-    </div>
-  )
-
   return (
     <>
       {renderCourseDashboard(
@@ -761,7 +776,6 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
         handleChapterComplete,
         progressLoading,
         chapterLastPositions,
-        ChapterProgressBar,
         router,
         // ✅ PHASE 3: Pass context directly to reduce individual parameters
         {

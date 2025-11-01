@@ -11,6 +11,29 @@ import { useAuth } from "@/modules/auth"
 const progressFetchCache = new Map<string, { data: any; timestamp: number }>()
 const activeFetchRequests = new Map<string, Promise<any>>()
 const CACHE_DURATION_MS = 300000 // 5 minutes - Reduced API calls by increasing cache duration
+const MAX_CACHE_SIZE = 50 // Maximum number of cached courses
+
+/**
+ * Evict old cache entries to prevent memory leaks
+ */
+function evictOldCacheEntries() {
+  const now = Date.now()
+  
+  // Remove expired entries
+  for (const [key, value] of progressFetchCache.entries()) {
+    if (now - value.timestamp > CACHE_DURATION_MS) {
+      progressFetchCache.delete(key)
+    }
+  }
+  
+  // Limit cache size (LRU eviction)
+  if (progressFetchCache.size > MAX_CACHE_SIZE) {
+    const entries = Array.from(progressFetchCache.entries())
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp)
+    const toDelete = entries.slice(0, progressFetchCache.size - MAX_CACHE_SIZE)
+    toDelete.forEach(([key]) => progressFetchCache.delete(key))
+  }
+}
 
 export function useCourseProgressSync(courseId: string | number) {
   const dispatch = useAppDispatch()
@@ -21,6 +44,7 @@ export function useCourseProgressSync(courseId: string | number) {
     useProgressEvents()
   const { user, isAuthenticated } = useAuth()
   const abortControllerRef = useRef<AbortController | null>(null)
+  const isMountedRef = useRef(true)
 
   // Stable userId
   const userId = user?.id ? String(user.id) : null
@@ -38,7 +62,7 @@ export function useCourseProgressSync(courseId: string | number) {
   // Sync to Redux with intelligent completion detection
   const syncProgressToRedux = useCallback(
     (progress: any) => {
-      if (!progress) return
+      if (!progress || !isMountedRef.current) return
 
       // ✅ Extract completed chapters list from API
       const completedChapters = Array.isArray(progress.completedChapters)
@@ -152,6 +176,10 @@ export function useCourseProgressSync(courseId: string | number) {
 
       const cacheKey = `progress-${courseId}`
       const now = Date.now()
+      
+      // ✅ Evict old cache entries before checking
+      evictOldCacheEntries()
+      
       const cached = progressFetchCache.get(cacheKey)
 
       // Cached result
@@ -162,8 +190,12 @@ export function useCourseProgressSync(courseId: string | number) {
 
       // Deduplicate
       if (activeFetchRequests.has(cacheKey)) {
-        const result = await activeFetchRequests.get(cacheKey)
-        syncProgressToRedux(result?.progress)
+        try {
+          const result = await activeFetchRequests.get(cacheKey)
+          syncProgressToRedux(result?.progress)
+        } catch (err) {
+          // Ignore errors from duplicate requests
+        }
         return
       }
 
@@ -180,15 +212,31 @@ export function useCourseProgressSync(courseId: string | number) {
 
         activeFetchRequests.set(cacheKey, fetchPromise)
         const data = await fetchPromise
+        
+        // ✅ Only update state if component is still mounted
+        if (!isMountedRef.current) {
+          return
+        }
+        
         progressFetchCache.set(cacheKey, { data, timestamp: now })
         syncProgressToRedux(data.progress)
       } catch (err) {
-        if (err instanceof Error && (err.name === "AbortError" || err.message === "Component unmounting")) {
-          return
+        // ✅ Properly handle abort errors - don't log them
+        if (err instanceof Error) {
+          if (err.name === "AbortError") {
+            // Silent abort - component unmounted
+            return
+          }
+          if (err.message.includes("unmount")) {
+            // Silent abort - component unmounting
+            return
+          }
         }
+        // Only log real errors
         console.error("[useCourseProgressSync] Error fetching progress:", err)
       } finally {
         activeFetchRequests.delete(cacheKey)
+        abortControllerRef.current = null
       }
     },
     [courseId, isAuthenticated, userId, syncProgressToRedux]
@@ -196,12 +244,21 @@ export function useCourseProgressSync(courseId: string | number) {
 
   // Run once per course/user
   useEffect(() => {
+    isMountedRef.current = true
+    
     if (isAuthenticated && userId) {
       fetchAndSyncProgress()
     }
     
     return () => {
-      abortControllerRef.current?.abort('Component unmounting');
+      // ✅ Mark as unmounted FIRST to prevent state updates
+      isMountedRef.current = false
+      
+      // ✅ Clean abort on unmount
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
     }
   }, [fetchAndSyncProgress, isAuthenticated, userId])
 
