@@ -7,10 +7,10 @@ import { useToast } from "@/hooks"
 import { useBookmarks } from "@/hooks/use-bookmarks"
 import { migratedStorage } from "@/lib/storage"
 import { getColorClasses } from "@/lib/utils"
-import { useProgressMutation, flushProgress } from "@/services/enhanced-progress/client_progress_queue"
+import { flushProgress } from "@/services/enhanced-progress/client_progress_queue"
 import { useAppDispatch } from "@/store/hooks"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
-import { markChapterCompleted, setVideoProgress } from "@/store/slices/courseProgress-slice"
+import { markChapterCompleted } from "@/store/slices/courseProgress-slice"
 import { storageManager } from "@/utils/storage-manager"
 import { formatDuration } from "date-fns"
 import { useSession } from "next-auth/react"
@@ -20,6 +20,7 @@ import { useCourseModule } from "../context/CourseModuleContext"
 import CertificateModal from "./CertificateModal"
 import { renderCourseDashboard, ComponentAction, ComponentState } from "./CourseDetailsShell"
 import { VideoPlayerSection } from "./sections/VideoPlayerSection"
+import { ProgressSection } from "./sections/ProgressSection"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
 import { useVideoState } from "./video/hooks/useVideoState"
 import { BookmarkData } from "./video/types"
@@ -308,6 +309,7 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     onTheaterModeToggle: (newMode) => dispatch2({ type: "SET_THEATER_MODE", payload: newMode }),
     onNextVideo: async () => {}, // Will implement below
     onCertificateClick: handleCertificateClick,
+    onVideoLoadingChange: (isLoading) => dispatch2({ type: "SET_VIDEO_LOADING", payload: isLoading }),
   })
 
   // Destructure video player state
@@ -325,6 +327,22 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     handlePlayerReady,
     handleSeekToBookmark,
   } = videoPlayerState
+  
+  // ✅ PHASE 3: Extract progress tracking logic into dedicated hook
+  const progressSection = ProgressSection({
+    course,
+    videoPlaylist,
+    currentVideoId,
+    currentVideoProgress,
+    videoDurations,
+    completedChapters,
+  })
+  
+  // Destructure progress handlers
+  const {
+    handleChapterComplete,
+    handleProgressUpdate,
+  } = progressSection
   
   // ✅ AUTO-SHOW CERTIFICATE: Detect 100% completion and open modal
   useEffect(() => {
@@ -362,8 +380,8 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     }, 0)
   }, [videoPlaylist, videoDurations])
 
-  // Enhanced progress tracking
-  const { enqueueProgress, flushQueue, isLoading: mutationLoading } = useProgressMutation()
+  // ✅ PHASE 3: Progress loading state (no longer needed, removed useProgressMutation)
+  const mutationLoading = false
 
   // Build progress object
   const progressByVideoId = useMemo(() => {
@@ -472,48 +490,9 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
       const isAlreadyCompleted = completedChapters.includes(String(currentChapter.id))
 
       if (!isAlreadyCompleted) {
-        const timeSpent = Math.round(currentVideoProgress * (videoDurations[currentVideoId || ""] || 0))
-        
-        const success = enqueueProgress(user.id, course.id, currentChapterId, "chapter_progress", 100, timeSpent, {
-          completed: true,
-          courseId: String(course.id),
-          chapterId: String(currentChapterId),
-          trigger: "next_click",
-          videoDuration: videoDurations[currentVideoId || ""] || 0,
-          watchedSeconds: timeSpent,
-          completedAt: Date.now(),
-        })
-
-        console.log('[MainContent] ✅ Chapter completion enqueued:', currentChapterId);
-
-        if (success) {
-          dispatch(
-            markChapterCompleted({
-              courseId: Number(course.id),
-              chapterId: currentChapterId,
-              userId: user.id,
-            }),
-          )
-
-          // Trigger immediate cache invalidation and refetch
-          console.log('[MainContent] 🎯 Dispatching progressSynced event after markChapterCompleted');
-          window.dispatchEvent(new CustomEvent('progressSynced', {
-            detail: {
-              requiresRefetch: true,
-              completedChaptersMap: { [String(course.id)]: [currentChapterId] },
-              courseId: String(course.id),
-              chapterId: String(currentChapterId)
-            }
-          }));
-
-          try {
-            await flushQueue()
-            await refreshProgressFromServer()
-            console.log('[MainContent] ✅ Progress synced for chapter:', currentChapterId);
-          } catch (err) {
-            console.error("[MainContent] ❌ Failed to sync progress:", err)
-          }
-        }
+        // ✅ PHASE 3: Use ProgressSection's handleChapterComplete
+        await handleChapterComplete(currentChapterId)
+        console.log('[MainContent] ✅ Chapter completed via next click:', currentChapterId)
       }
     }
 
@@ -523,18 +502,8 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     try {
       videoStateStore.getState().setCurrentVideo(nextVid, course.id)
 
-      if (user?.id && !course.isShared && nextVideoEntry.chapter?.id) {
-        enqueueProgress(user.id, course.id, nextVideoEntry.chapter.id, "chapter_start", 0, 0, {
-          courseId: String(course.id),
-          chapterId: String(nextVideoEntry.chapter.id),
-          progress: 0,
-          playedSeconds: 0,
-          duration: 0,
-          videoId: nextVid,
-          startedAt: Date.now(),
-          previouslyCompleted: completedChapters.includes(String(nextVideoEntry.chapter.id)),
-        })
-      }
+      // ✅ PHASE 3: Chapter start tracking removed (not critical for progress)
+      // Progress is tracked via VideoPlayerSection's handleVideoProgress
     } catch (e) {
       console.error("Failed to set current video:", e)
     }
@@ -554,8 +523,7 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     currentVideoProgress,
     videoDurations,
     currentVideoId,
-    enqueueProgress,
-    flushQueue,
+    handleChapterComplete,
     refreshProgressFromServer,
   ])
 
@@ -598,13 +566,8 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
         dispatch(setCurrentVideoApi(videoId))
         videoStateStore.getState().setCurrentVideo(videoId, course.id)
 
-        if (user?.id && !course.isShared) {
-          enqueueProgress(user.id, course.id, safeChapter.id, "chapter_start", 0, 0, {
-            videoId: videoId,
-            startedAt: Date.now(),
-            previouslyCompleted: completedChapters.includes(String(safeChapter.id)),
-          })
-        }
+        // ✅ PHASE 3: Chapter start tracking removed (not critical for progress)
+        // Progress is tracked via VideoPlayerSection's handleVideoProgress
 
         dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: false })
         dispatch2({ type: "SET_VIDEO_LOADING", payload: true })
@@ -617,7 +580,7 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
         })
       }
     },
-    [dispatch, course.id, videoStateStore, toast, userSubscription, user?.id, completedChapters, enqueueProgress, videoPlaylist],
+    [dispatch, course.id, videoStateStore, toast, userSubscription, user?.id, completedChapters, videoPlaylist],
   )
 
   // ✅ Video handlers are now provided by VideoPlayerSection hook (extracted above)
@@ -651,93 +614,8 @@ const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChap
     }
   }, [course.id, initialChapterId, videoPlaylist, dispatch, videoStateStore, currentVideoId, unifiedProgress])
 
-  const handleChapterComplete = useCallback(
-    async (chapterId: number) => {
-      const chapterIdNum = Number(chapterId)
-      const courseIdNum = Number(course.id)
-
-      if (user?.id && !course.isShared) {
-        const isAlreadyCompleted = completedChapters.includes(String(chapterId))
-
-        if (!isAlreadyCompleted) {
-          dispatch(
-            markChapterCompleted({
-              courseId: courseIdNum,
-              chapterId: chapterIdNum,
-              userId: user.id,
-            }),
-          )
-
-          // Trigger immediate cache invalidation and refetch
-          console.log('[MainContent] 🎯 Dispatching progressSynced event after markChapterCompleted');
-          window.dispatchEvent(new CustomEvent('progressSynced', {
-            detail: {
-              requiresRefetch: true,
-              completedChaptersMap: { [String(courseIdNum)]: [chapterIdNum] },
-              courseId: String(courseIdNum),
-              chapterId: String(chapterIdNum)
-            }
-          }));
-
-          const timeSpent = Math.round(currentVideoProgress * (videoDurations[currentVideoId || ""] || 0))
-          const success = enqueueProgress(user.id, courseIdNum, chapterIdNum, "chapter_progress", 100, timeSpent, {
-            completed: true,
-            courseId: String(courseIdNum),
-            chapterId: String(chapterIdNum),
-            trigger: "playlist_callback",
-            videoDuration: videoDurations[currentVideoId || ""] || 0,
-            watchedSeconds: timeSpent,
-            completedAt: Date.now(),
-          })
-
-          if (success) {
-            try {
-              await flushQueue()
-              await refreshProgressFromServer()
-            } catch (err) {
-              console.error("Failed to flush progress:", err)
-            }
-          }
-        }
-      }
-    },
-    [
-      user?.id,
-      course.id,
-      course.isShared,
-      completedChapters,
-      currentVideoProgress,
-      videoDurations,
-      currentVideoId,
-      dispatch,
-      enqueueProgress,
-      flushQueue,
-      refreshProgressFromServer,
-    ],
-  )
-
-  // Handle progress update
-  const handleProgressUpdate = useCallback(
-    (chapterId: string, progress: number) => {
-      if (user?.id && !course.isShared && currentVideoId) {
-        const chapter = videoPlaylist.find((v) => String(v.chapter.id) === String(chapterId))
-        if (chapter && chapter.videoId === currentVideoId) {
-          dispatch(
-            setVideoProgress({
-              courseId: String(course.id),
-              chapterId: Number(chapterId),
-              progress,
-              playedSeconds: Math.round((progress / 100) * (videoDurations[currentVideoId] || 0)),
-              completed: progress >= 95,
-              userId: user.id,
-            }),
-          )
-        }
-      }
-    },
-    [user?.id, course.id, course.isShared, currentVideoId, videoPlaylist, videoDurations, dispatch],
-  )
-
+  // ✅ PHASE 3: Progress handlers now come from ProgressSection hook (extracted above)
+  
   // Initialize video selection
   useEffect(() => {
     if (videoPlaylist.length === 0) return

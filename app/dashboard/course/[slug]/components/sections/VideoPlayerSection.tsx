@@ -23,6 +23,7 @@ interface VideoPlayerSectionProps {
   onTheaterModeToggle: (newMode: boolean) => void;
   onNextVideo: () => Promise<void>;
   onCertificateClick: () => void;
+  onVideoLoadingChange?: (isLoading: boolean) => void; // New callback
 }
 
 export function VideoPlayerSection({
@@ -38,6 +39,7 @@ export function VideoPlayerSection({
   onTheaterModeToggle,
   onNextVideo,
   onCertificateClick,
+  onVideoLoadingChange,
 }: VideoPlayerSectionProps) {
   const dispatch = useAppDispatch();
   const { toast } = useToast();
@@ -86,7 +88,11 @@ export function VideoPlayerSection({
   // Reset progress when video changes
   useEffect(() => {
     setCurrentVideoProgress(0);
-  }, [currentVideoId]);
+    // Set loading to true when video changes
+    if (onVideoLoadingChange) {
+      onVideoLoadingChange(true);
+    }
+  }, [currentVideoId, onVideoLoadingChange]);
   
   // ============================================================================
   // Event Handlers
@@ -323,14 +329,23 @@ export function VideoPlayerSection({
           ...prev,
           [currentVideoId]: metadata.duration,
         }));
+        
+        // Video metadata loaded - set loading to false
+        if (onVideoLoadingChange) {
+          onVideoLoadingChange(false);
+        }
       }
     },
-    [currentVideoId],
+    [currentVideoId, onVideoLoadingChange],
   );
   
   const handlePlayerReady = useCallback((player: React.RefObject<any>) => {
     setPlayerRef(player);
-  }, []);
+    // Notify that video is ready and loading is complete
+    if (onVideoLoadingChange) {
+      onVideoLoadingChange(false);
+    }
+  }, [onVideoLoadingChange]);
   
   const handleSeekToBookmark = useCallback(
     (time: number) => {
