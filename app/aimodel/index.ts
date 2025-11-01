@@ -19,16 +19,24 @@
 
 
 
-// Re-export types
-
-
-
-
-
+// Re-export types
+
+
+
+
+
+
+
+
+
+
+
 
 // Import the classes for the initialization function
 import { EmbeddingManager } from './core/embedding-manager'
-import { ChatService } from './chat/chat-service'
+// Note: ChatService file is named `ChatService.ts` (PascalCase) under app/aimodel/chat
+// Use the correct case-sensitive path so Turbopack/ESM resolves it on case-sensitive systems.
+import { ChatService } from './chat/ChatService'
 import { RecommendationService } from './recommendations/recommendation-service'
 import { UserAnalyzer } from './recommendations/user-analyzer'
 import { ContentMatcher } from './recommendations/content-matcher'
