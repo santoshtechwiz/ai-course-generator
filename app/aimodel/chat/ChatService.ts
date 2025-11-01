@@ -424,14 +424,15 @@ export class ChatService {
   ): Promise<ChatResponse> {
     const isSubscribed = userContext?.isSubscribed || false
     
+    // ✅ TEACHER MODE: Shorter responses to save tokens and maintain focus
     const ragResponse = await this.ragService.generateResponse(
       userId || 'anonymous',
       message,
       {
-        maxTokens: isSubscribed ? 500 : 250,
+        maxTokens: isSubscribed ? 200 : 150, // Reduced from 500/250 for concise teacher responses
         temperature: 0.7,
         includeHistory: true,
-        contextLimit: 5
+        contextLimit: 3 // Reduced from 5 to save tokens
       }
     )
 

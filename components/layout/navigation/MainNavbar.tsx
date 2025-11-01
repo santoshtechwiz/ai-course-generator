@@ -404,7 +404,7 @@ export function MainNavbar() {
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="md:hidden h-9 w-9 border-3 border-[var(--color-border)] bg-[var(--color-bg)] rounded-none shadow-[2px_2px_0_var(--shadow-color)] hover:shadow-[3px_3px_0_var(--shadow-color)] active:shadow-[1px_1px_0_var(--shadow-color)] transition-all duration-150"
+                    className="md:hidden min-h-11 min-w-11 border-3 border-[var(--color-border)] bg-[var(--color-bg)] rounded-none shadow-[2px_2px_0_var(--shadow-color)] hover:shadow-[3px_3px_0_var(--shadow-color)] active:shadow-[1px_1px_0_var(--shadow-color)] transition-all duration-150"
                     suppressHydrationWarning
                     aria-label="Toggle menu"
                   >
@@ -452,6 +452,11 @@ export function MainNavbar() {
                   >
                     {isAuthenticated ? (
                       <>
+                        {/* User Menu for mobile */}
+                        <div className="mb-3">
+                          <UserMenu />
+                        </div>
+                        
                         {availableCredits !== null && (
                           <motion.div 
                             className="flex items-center justify-between p-4 bg-[var(--color-card)] border-4 border-[var(--color-border)] rounded-none shadow-[3px_3px_0_var(--shadow-color)] relative overflow-hidden"

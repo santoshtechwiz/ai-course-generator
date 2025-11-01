@@ -7,7 +7,7 @@ import { setCurrentVideoApi } from "@/store/slices/course-slice";
 import { formatDuration } from "date-fns";
 import { BookOpen, Clock, Play, CheckCircle, Menu, X, Star, Zap, ChevronDown, Award, TrendingUp } from "lucide-react";
 import { User } from "next-auth";
-import { ComponentState } from "react";
+import React from "react";
 import ActionButtons from "./ActionButtons";
 import CertificateModal from "./CertificateModal";
 import MobilePlaylistOverlay from "./MobilePlaylistOverlay";
@@ -17,55 +17,44 @@ import VideoPlayer from "./video/components/VideoPlayer";
 import { BookmarkData } from "./video/types";
 import VideoGenerationSection from "./VideoGenerationSection";
 import VideoNavigationSidebar from "./ChapterPlaylist"
-import React from "react";
 import CourseDetailsTabs from "./CourseDetailsTabs";
 
 const MemoizedCourseDetailsTabs = React.memo(CourseDetailsTabs)
 
-// ===== IMPROVED PROGRESS RING =====
-const ProgressRing = ({ percentage, size = 48 }: { percentage: number; size?: number }) => {
-  const radius = (size - 8) / 2
-  const circumference = radius * 2 * Math.PI
-  const offset = circumference - (percentage / 100) * circumference
-
-  return (
-    <div className="relative inline-flex items-center justify-center">
-      <svg width={size} height={size} className="transform -rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth="3"
-          fill="none"
-          className="text-gray-300 dark:text-gray-700"
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="currentColor"
-          strokeWidth="3"
-          fill="none"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-          className="text-lime-500 dark:text-lime-400 transition-all duration-700 ease-out"
-          strokeLinecap="round"
-        />
-      </svg>
-    </div>
-  )
+// Component State Types
+export interface ComponentState {
+  showCertificate: boolean
+  autoplayMode: boolean
+  isTheaterMode: boolean
+  isVideoLoading: boolean
+  mobilePlaylistOpen: boolean
+  sidebarCollapsed: boolean
+  authPromptVisible: boolean
+  headerCompact: boolean
+  mounted: boolean
+  freeVideoPlayed: boolean
 }
+
+export type ComponentAction =
+  | { type: "SET_CERTIFICATE_VISIBLE"; payload: boolean }
+  | { type: "SET_AUTOPLAY_MODE"; payload: boolean }
+  | { type: "SET_THEATER_MODE"; payload: boolean }
+  | { type: "SET_VIDEO_LOADING"; payload: boolean }
+  | { type: "SET_MOBILE_PLAYLIST_OPEN"; payload: boolean }
+  | { type: "SET_SIDEBAR_COLLAPSED"; payload: boolean }
+  | { type: "SET_AUTH_PROMPT"; payload: boolean }
+  | { type: "SET_HEADER_COMPACT"; payload: boolean }
+  | { type: "SET_MOUNTED"; payload: boolean }
+  | { type: "SET_FREE_VIDEO_PLAYED"; payload: boolean }
+
 
 export function renderCourseDashboard(
   course: FullCourseType,
-  authPromptOverlay,
+  authPromptOverlay: React.ReactNode,
   state: ComponentState,
   enhancedCourseStats: { totalVideos: number; completedVideos: any; totalDuration: string; progressPercentage: number },
   dispatch2: React.Dispatch<ComponentAction>,
-  isOwner: boolean,
-  user: User | null,
-  dispatch,
+  dispatch: any,
   currentChapter: FullChapterType | undefined,
   currentIndex: number,
   videoPlaylist: { videoId: string; chapter: FullChapterType }[],
@@ -86,21 +75,63 @@ export function renderCourseDashboard(
   nextVideoTitle: string,
   hasNextVideo: boolean,
   videoDurations: Record<string, number>,
-  handleSeekToBookmark: (time: number, title?: string) => void,
-  completedChapters: any,
-  sidebarCourse: { id: string; title: string; chapters: { id: string; title: string; videoId: string | undefined; duration: number | undefined; isFree: boolean | undefined }[] },
-  sidebarCurrentChapter: { id: string; title: string; videoId: string | undefined; duration: number | undefined; isFree: boolean | undefined } | null,
-  userSubscription: string | null,
-  courseStats: { completedCount: any; totalChapters: number; progressPercentage: number },
-  handleChapterSelect: (chapter: { id: string | number; title: string; videoId?: string; isFree?: boolean }) => void,
+  handleSeekToBookmark: (time: number) => void,
+  completedChapters: string[],
+  sidebarCourse: any,
+  sidebarCurrentChapter: any,
+  userSubscription: any,
+  courseStats: any,
+  handleChapterSelect: (videoId: string) => void,
   progressByVideoId: Record<string, number>,
   handleProgressUpdate: (chapterId: string, progress: number) => void,
-  handleChapterComplete: (chapterId: string) => void,
+  handleChapterComplete: (chapterId: number) => Promise<void>,
   progressLoading: boolean,
   chapterLastPositions: Record<string, number>,
-  ChapterProgressBar,
-  router
+  ChapterProgressBar: React.ComponentType<{ progress: number }>,
+  router: any,
+  // ✅ PHASE 3: Context object to reduce parameters
+  contextData?: {
+    user: User | null;
+    isOwner: boolean;
+    isGuest: boolean;
+    canPlayVideo: boolean;
+  }
 ): React.ReactNode {
+  // Extract context data with fallbacks for backward compatibility
+  const { 
+    user = null,
+    isOwner = false,
+    isGuest = false,
+    canPlayVideo = false
+  } = contextData || {}
+  
+  // Helper to format seconds to readable duration
+  const formatSeconds = (seconds: number): string => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = Math.floor(seconds % 60)
+    
+    if (hours > 0) {
+      return `${hours}h ${minutes}m`
+    } else if (minutes > 0) {
+      return `${minutes}m ${secs}s`
+    } else {
+      return `${secs}s`
+    }
+  }
+  
+  // Wrapper for handleChapterSelect to match VideoNavigationSidebar signature
+  const handleChapterSelectWrapper = (chapter: any) => {
+    if (chapter && chapter.videoId) {
+      handleChapterSelect(chapter.videoId)
+    }
+  }
+  
+  // Wrapper for handleChapterComplete to match VideoNavigationSidebar signature  
+  const handleChapterCompleteWrapper = (chapterId: string) => {
+    handleChapterComplete(Number(chapterId))
+  }
+  
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-foreground transition-colors duration-200">
       {/* ===== SHARED COURSE BANNER ===== */}
@@ -322,12 +353,11 @@ export function renderCourseDashboard(
                       nextVideoTitle={nextVideoTitle}
                       hasNextVideo={hasNextVideo}
                       autoAdvanceNext={state.autoplayMode}
-                      playbackSpeedOptions={[0.5, 1, 1.5, 2]}
-                      subtitleOptions={["English", "Spanish", "French"]}
-                      qualityOptions={["360p", "720p", "1080p"]}
-                      onPlaybackSpeedChange={(speed) => console.log(`Playback speed: ${speed}`)}
-                      onSubtitleChange={(subtitle) => console.log(`Subtitle: ${subtitle}`)}
-                      onQualityChange={(quality) => console.log(`Quality: ${quality}`)}
+                      progressStats={{
+                        completedCount: courseStats.completedCount,
+                        totalChapters: courseStats.totalChapters,
+                        progressPercentage: courseStats.progressPercentage
+                      }}
                     />
                   </div>
                 )}
@@ -349,7 +379,7 @@ export function renderCourseDashboard(
                     </div>
                     {videoDurations[currentVideoId || ""] && (
                       <div className="bg-gradient-to-br from-yellow-300 to-yellow-400 dark:from-yellow-400 dark:to-yellow-500 border-3 border-black dark:border-white px-3 py-2 font-black text-sm whitespace-nowrap flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-shadow rounded-none">
-                        <div className="text-black dark:text-black">{formatDuration(videoDurations[currentVideoId || ""])}</div>
+                        <div className="text-black dark:text-black">{formatSeconds(videoDurations[currentVideoId || ""])}</div>
                       </div>
                     )}
                   </div>
@@ -410,21 +440,15 @@ export function renderCourseDashboard(
                       isAuthenticated={!!user}
                       userSubscription={userSubscription || null}
                       completedChapters={completedChapters.map(String)}
-                      formatDuration={formatDuration}
+                      formatDuration={formatSeconds}
                       videoDurations={videoDurations}
                       courseStats={courseStats}
-                      onChapterSelect={handleChapterSelect}
+                      onChapterSelect={handleChapterSelectWrapper}
                       progress={progressByVideoId}
                       onProgressUpdate={handleProgressUpdate}
-                      onChapterComplete={handleChapterComplete}
+                      onChapterComplete={handleChapterCompleteWrapper}
                       isProgressLoading={progressLoading}
                       lastPositions={chapterLastPositions}
-                      renderChapter={(chapter) => (
-                        <div>
-                          <span>{chapter.title}</span>
-                          <ChapterProgressBar progress={progressByVideoId[chapter.videoId] || 0} />
-                        </div>
-                      )}
                     />
                   )}
                 </div>
@@ -442,24 +466,14 @@ export function renderCourseDashboard(
           course={sidebarCourse}
           currentChapter={sidebarCurrentChapter}
           courseId={course.id.toString()}
-          currentVideoId={currentVideoId}
+          currentVideoId={currentVideoId || ""}
           isAuthenticated={!!user}
           userSubscription={userSubscription || null}
           completedChapters={completedChapters.map(String)}
-          formatDuration={formatDuration}
+          formatDuration={formatSeconds}
           videoDurations={videoDurations}
           courseStats={courseStats}
-          onChapterSelect={handleChapterSelect}
-          closeButton={
-            <button
-              className="absolute top-3 right-3 bg-red-500 hover:bg-red-600 text-white p-2.5 border-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] transition-all font-black uppercase text-xs rounded-none"
-              onClick={() => dispatch2({ type: "SET_MOBILE_PLAYLIST_OPEN", payload: false })}
-              aria-label="Close playlist"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          }
-          swipeToClose
+          onChapterSelect={handleChapterSelectWrapper}
         />
       )}
 
@@ -532,10 +546,10 @@ export function renderCourseDashboard(
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
           <div className="bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-300 border-3 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] px-5 py-3.5 rounded-none">
             <div className="flex items-center gap-3">
-              <Award className="h-8 w-8 text-black animate-spin" />
-              <div>
+              <Award className="h-8 w-8 text-black" />
+              <div className="flex-1">
                 <p className="font-black text-lg uppercase text-black tracking-tight">🎉 Course Complete!</p>
-                <p className="text-xs font-bold text-black/80">You've mastered this course</p>
+                <p className="text-xs font-bold text-black/80">You've mastered this course - download your certificate!</p>
               </div>
             </div>
           </div>

@@ -141,13 +141,6 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
     const totalHours = Math.floor(totalDurationSeconds / 3600)
     const remainingMinutes = Math.floor((totalDurationSeconds % 3600) / 60)
 
-    console.log('[ChapterPlaylist] Statistics recalculated:', {
-      totalChapters,
-      completedCount,
-      completedChapters: completedChapters?.slice(0, 5),
-      courseSample: course?.chapters?.slice(0, 3).map(c => ({ id: c.id, title: c.title }))
-    })
-
     return {
       totalChapters,
       completedCount,
@@ -296,16 +289,6 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
             const hasVideo = !!chapter.videoId
             const isLocked = hasVideo && !chapter.isFree && chapter.locked
             const thumbnailUrl = chapter.thumbnail || (hasVideo ? getYouTubeThumbnailUrl(chapter.videoId || "", "hqdefault") : null)
-
-            if (chapterIndex === 0) {
-              console.log('[ChapterPlaylist] First chapter debug:', {
-                chapterId: chapter.id,
-                videoId: chapter.videoId,
-                progressValue: progress?.[chapter.videoId || ''],
-                chapterProgress,
-                allProgress: progress
-              })
-            }
 
             return (
               <button

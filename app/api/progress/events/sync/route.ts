@@ -147,6 +147,8 @@ export async function POST(req: NextRequest) {
 
     // Persist progress for each course
     const results = [];
+    const completedChaptersMap: Record<string, number[]> = {}; // ✅ Build map for response
+    
     for (const [courseId, progressData] of courseProgressMap.entries()) {
       // Get existing progress
       const existingProgress = await prisma.courseProgress.findUnique({
@@ -161,6 +163,31 @@ export async function POST(req: NextRequest) {
       // Merge completedChapters
       const existingCompletedChapters = extractCompletedChapters(existingProgress?.chapterProgress);
       const updatedCompletedChapters = Array.from(new Set([...(existingCompletedChapters || []), ...(progressData.completedChapters || [])]));
+      
+      // ✅ CRITICAL: Also query database for any chapters that may have been marked complete
+      // This ensures we catch ALL completed chapters, not just those in events
+      const dbCompletedChapters = await prisma.chapterProgress.findMany({
+        where: {
+          userId,
+          courseId: Number(courseId),
+          isCompleted: true,
+        },
+        select: {
+          chapterId: true,
+        },
+      });
+      
+      const dbCompletedIds = dbCompletedChapters.map(c => c.chapterId);
+      const allCompletedChapters = Array.from(new Set([...updatedCompletedChapters, ...dbCompletedIds]));
+      
+      // ✅ Store final list in map for response
+      completedChaptersMap[`${userId}:${courseId}`] = allCompletedChapters;
+      
+      console.log('[events/sync] Completed chapters for', `${userId}:${courseId}:`, {
+        fromEvents: updatedCompletedChapters,
+        fromDatabase: dbCompletedIds,
+        final: allCompletedChapters
+      });
 
       // Prepare updated chapterProgress JSON
       const existingQuizProgress = existingProgress?.quizProgress ? safeParse(existingProgress.quizProgress, {}) : {};
@@ -176,7 +203,7 @@ export async function POST(req: NextRequest) {
 
       // Update or create the progress record
       const updatedChapterProgress = {
-        completedChapters: updatedCompletedChapters,
+        completedChapters: allCompletedChapters,
         lastPositions: existingQuizProgress.lastPositions || {}
       };
 
@@ -187,13 +214,24 @@ export async function POST(req: NextRequest) {
             courseId: Number(courseId)
           }
         }
-      });
+      })
       
-      const completedCount = updatedCompletedChapters.length;
-      const calculatedProgress = totalChapters > 0 ? (completedCount / totalChapters) * 100 : 0;
+      const completedCount = allCompletedChapters.length
+      const calculatedProgress = totalChapters > 0 ? (completedCount / totalChapters) * 100 : 0
 
       // Use the higher of existing progress or calculated progress
-      const finalProgress = Math.max(progressData.progress || 0, calculatedProgress);
+      const finalProgress = Math.max(progressData.progress || 0, calculatedProgress)
+      
+      // ✅ DEBUG: Log what we're about to persist
+      console.log('[events/sync] Chapter completion detected:', {
+        userId,
+        courseId: Number(courseId),
+        totalChapters,
+        completedCount,
+        allCompletedChapters,
+        calculatedProgress,
+        finalProgress
+      })
 
       // Debug: log what we will persist for this course so we can trace completedChapters/lastPositions
       try {
@@ -244,7 +282,9 @@ export async function POST(req: NextRequest) {
       message: "Events processed and progress updated",
       updatedCourses: results.map(r => r.courseId),
       count: events.length,
-      timestamp: body.timestamp || Date.now()
+      timestamp: body.timestamp || Date.now(),
+      // ✅ Return completedChapters map for client-side cache invalidation
+      completedChaptersMap
     });
   } catch (error) {
     return NextResponse.json({ 

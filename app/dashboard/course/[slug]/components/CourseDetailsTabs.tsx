@@ -195,10 +195,9 @@ export default function CourseDetailsTabs({
 
   const courseProgress = useAppSelector(selectCourseProgress)
 
-  // Notes management
+  // Notes management - FIXED: Removed chapterId to match cache key used by NoteModal
   const { notes, deleteNote } = useNotes({
     courseId: course.id,
-    chapterId: currentChapter?.id,
     limit: 5,
   })
 

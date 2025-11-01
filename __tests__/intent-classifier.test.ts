@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { IntentClassifier } from '@/app/services/chat/IntentClassifier'
+import { IntentClassifier } from '@/app/aimodel/chat/IntentClassifier'
 import { ChatIntent } from '@/types/chat.types'
 
 // Mock OpenAI to avoid requiring API key in tests

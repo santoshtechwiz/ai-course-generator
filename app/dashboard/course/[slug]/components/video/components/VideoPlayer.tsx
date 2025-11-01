@@ -1194,13 +1194,9 @@ const VideoPlayer = React.memo<VideoPlayerProps>(
         {!shouldHideMainPlayer && <TheaterModeButton isTheater={isTheaterMode} onToggle={handleTheaterModeToggle} />}
 
         {!shouldHideMainPlayer && (
-          <div className="absolute top-2 right-2 sm:top-4 sm:right-4 z-30">
-            <div className={cn(neo.card, "bg-pink-500 rounded-none p-2 sm:p-3 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]")}>
-              <span className="text-black font-black text-xs sm:text-sm select-none uppercase tracking-wider">
-                CourseAI
-              </span>
-            </div>
-          </div>
+          <>
+            {/* CourseAI logo now displayed as floating element in MainContent */}
+          </>
         )}
 
         {/* Enhanced Mini Player */}

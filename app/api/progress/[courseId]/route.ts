@@ -101,19 +101,28 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
         quizProgress: quizProgress
       })
 
-      // Add completedChapters and lastPositions to the progress object
+      let responseProgress: any
+
       if (progress) {
-        ;(progress as any).completedChapters = completedChapters
-        ;(progress as any).lastPositions = lastPositions
-              // Expose last played seconds for current chapter (synthetic field) via quizProgress JSON
-              const currentChapterId = (progress as any).currentChapterId
-              const playedSeconds = lastPositions?.[currentChapterId]
-              if (typeof playedSeconds === "number") {
-                ;(progress as any).playedSeconds = playedSeconds
-              }
+        const rawProgressValue = typeof progress.progress === "number" ? progress.progress : 0
+        const normalizedProgress = rawProgressValue <= 1 ? Math.round(rawProgressValue * 100) : rawProgressValue
+
+        responseProgress = {
+          ...progress,
+          progress: normalizedProgress,
+          completedChapters,
+          lastPositions,
+        }
+
+        // Expose last played seconds for current chapter if stored in lastPositions
+        const currentChapterId = (responseProgress as any).currentChapterId
+        const playedSeconds = lastPositions?.[currentChapterId]
+        if (typeof playedSeconds === "number") {
+          responseProgress.playedSeconds = playedSeconds
+        }
       } else {
         // If no CourseProgress record exists, create one with completed chapters
-        progress = {
+        responseProgress = {
           id: 0,
           userId: userId,
           courseId: Number.parseInt(courseId),
@@ -132,8 +141,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
           createdAt: new Date(),
           updatedAt: new Date(),
           lastAccessedAt: new Date(),
-          completedChapters: completedChapters,
-        } as any
+          completedChapters,
+          lastPositions,
+        }
       }
 
       // Debug: log final progress object being returned
@@ -141,18 +151,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ courseId
         console.log('[API GET /api/progress/:courseId] Returning progress object for user:', userId, {
           courseId: Number.parseInt(courseId),
           progressShape: {
-            currentChapterId: (progress as any).currentChapterId,
-            completedChapters: (progress as any).completedChapters,
-            lastPositions: (progress as any).lastPositions,
-            playedSeconds: (progress as any).playedSeconds,
-            progress: (progress as any).progress,
+            currentChapterId: responseProgress.currentChapterId,
+            completedChapters: responseProgress.completedChapters,
+            lastPositions: responseProgress.lastPositions,
+            playedSeconds: responseProgress.playedSeconds,
+            progress: responseProgress.progress,
           }
         })
       } catch (e) {
         console.warn('[API GET] Failed to stringify progress debug payload', e)
       }
 
-      return NextResponse.json({ progress })
+      return NextResponse.json({ progress: responseProgress })
     } catch (error) {
       console.error(`Error fetching progress: ${error}`)
       // Return mock data for testing when database is not available

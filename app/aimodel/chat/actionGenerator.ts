@@ -7,9 +7,9 @@
  * - User intent
  */
 
+import { SubscriptionStatus, getUpgradeMessage } from '@/app/services/subscriptionLimits'
 import { prisma } from '@/lib/db'
 import { logger } from '@/lib/logger'
-import { checkSubscriptionLimits, getUpgradeMessage, type SubscriptionStatus } from '../subscriptionLimits'
 
 type ActionType = 'view_course' | 'take_quiz' | 'create_course' | 'create_quiz' | 'upgrade_plan' | 'view_all_courses'
 

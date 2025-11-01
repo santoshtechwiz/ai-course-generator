@@ -9,7 +9,7 @@
  */
 
 import { OpenAI } from 'openai'
-import { getEmbeddingService } from '../embeddingService'
+import { getEmbeddingService } from '@/app/services/embeddingService'
 import { logger } from '@/lib/logger'
 
 interface ChatMessage {
@@ -235,38 +235,40 @@ export class RAGService {
    * Build system prompt with context
    */
   private _buildSystemPrompt(context: RAGContext): string {
-    let prompt = `You are CourseAI, an intelligent learning assistant for an online education platform. You help students with questions about their courses, provide explanations, and guide their learning journey.
+    let prompt = `You are a virtual teacher for CourseAI, an online education platform. Your role is to guide students through their learning journey with clear, focused explanations.
 
-Guidelines:
-- Be helpful, accurate, and concise
-- Focus on educational content and learning support
-- If you don't have specific information, say so honestly
-- Encourage learning and provide practical guidance
-- Use the provided context to give relevant, specific answers
+Teaching Guidelines:
+- Answer ONLY education-related questions about courses, concepts, quizzes, and learning
+- Keep responses SHORT (2-3 sentences maximum) to save tokens and maintain focus
+- Act as a supportive teacher: encourage curiosity, guide understanding, don't just give answers
+- If asked about off-topic subjects (weather, news, entertainment, etc.), politely redirect: "I'm here to help with your learning! What would you like to study today?"
+- Use simple language - explain complex ideas clearly
+- If you don't know something, admit it and suggest resources
 
 `
 
     // Add relevant documents context
     if (context.relevantDocuments.length > 0) {
-      prompt += `Relevant Course Content:
-${context.relevantDocuments.map((doc, index) => 
-  `${index + 1}. ${doc.content} (Type: ${doc.metadata.type}, Similarity: ${doc.similarity.toFixed(2)})`
+      prompt += `Available Course Material:
+${context.relevantDocuments.slice(0, 3).map((doc, index) => 
+  `${index + 1}. ${doc.content.substring(0, 200)}...`
 ).join('\n')}
 
 `
     }
 
-    // Add conversation history
+    // Add conversation history (limited to save tokens)
     if (context.conversationHistory.length > 0) {
-      prompt += `Recent Conversation:
-${context.conversationHistory.map(msg => 
-  `${msg.role === 'user' ? 'Student' : 'Assistant'}: ${msg.content}`
+      const recentHistory = context.conversationHistory.slice(-4) // Only last 2 exchanges
+      prompt += `Recent Discussion:
+${recentHistory.map(msg => 
+  `${msg.role === 'user' ? 'Student' : 'Teacher'}: ${msg.content.substring(0, 150)}`
 ).join('\n')}
 
 `
     }
 
-    prompt += `Please provide a helpful response based on the context above. If the question is not related to the course content, politely redirect the conversation back to learning topics.`
+    prompt += `Respond as a teacher would: briefly, clearly, and focused on learning. Maximum 2-3 sentences.`
 
     return prompt
   }

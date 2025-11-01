@@ -120,6 +120,7 @@ export async function getQuestionsFromTranscript(
   userId?: string,
   subscriptionPlan?: string,
   credits?: number,
+  useSummary?: boolean,
 ): Promise<any[]> {
   try {
     // Check if transcript is available
@@ -137,14 +138,22 @@ export async function getQuestionsFromTranscript(
       return [];
     }
 
-    // Extract most relevant content to stay within token limits
-    // Use lower word limit for quiz generation to reduce tokens (vs summary which uses full content)
-    const relevantContent = extractRelevantContent(cleanedTranscript, 600); // Reduced from 800
+    // ✅ OPTIMIZATION: Use reduced word limit when generating from summary (saves tokens)
+    // Summary is already focused, so fewer tokens needed for quality questions
+    const wordLimit = useSummary ? 400 : 600;
+    const relevantContent = extractRelevantContent(cleanedTranscript, wordLimit);
 
     // Final check for relevant content
     if (!relevantContent || relevantContent.trim().length < 20) {
       console.warn("No relevant content extracted from transcript");
       return [];
+    }
+
+    // ✅ LOG: Track whether summary or transcript is being used (for monitoring)
+    if (useSummary) {
+      console.log(`[Quiz] Using SUMMARY for quiz generation (${relevantContent.length} chars, ~${Math.ceil(relevantContent.length / 4)} tokens)`);
+    } else {
+      console.log(`[Quiz] Using FULL TRANSCRIPT for quiz generation (${relevantContent.length} chars, ~${Math.ceil(relevantContent.length / 4)} tokens)`);
     }
 
     // Generate questions with the improved transcript using simple AI service

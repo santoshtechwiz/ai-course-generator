@@ -1,10 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@plugin "@tailwindcss/typography";
-
-@custom-variant dark (&:is(.dark *));
-
+/* Light mode (default) */
 :root {
   /* === Neo-Brutalism Design Tokens === */
   --color-bg: #f7f3ef;           /* warm off-white background */
@@ -18,7 +15,7 @@
   --color-warning: #ffbb33;       /* warning states */
   --color-error: #ff4444;         /* error states */
   --color-border: #000000;        /* bold neo-brutal borders */
-  --shadow-color: #000000;        /* shadow color for neo-brutal effect */
+  --shadow-color: #333333;        /* softer shadow for light mode */
 
   /* === Spacing (Neo-Brutalism) === */
   --spacing-xs: 4px;
@@ -49,25 +46,24 @@
   --shadow-heavy: 8px 8px 0 var(--shadow-color);
 }
 
+/* System dark mode preference */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #1a1a1a;
+    --color-card: #2a2a2a;
+    --color-text: #ffffff;
+    --color-muted: #aaaaaa;
+    --color-border: #ffffff;
+    --shadow-color: #cccccc;
+  }
+}
 
+/* .dark class overrides system preference */
 .dark {
-  --background: oklch(29.12% 0.0633 270.86);
-  --secondary-background: oklch(23.93% 0 0);
-  --foreground: oklch(92.49% 0 0);
-  --main-foreground: oklch(0% 0 0);
-
-  --border: oklch(0% 0 0);
-  --ring: oklch(100% 0 0);
-
-  --shadow: var(--box-shadow-x) var(--box-shadow-y) 0px 0px var(--border);
-
-  --chart-active-dot: #fff;
-
-  /* === Neo-Brutalism Dark Mode Variables === */
   --color-bg: #1a1a1a;           /* dark background */
   --color-card: #2a2a2a;         /* dark card surfaces */
   --color-text: #ffffff;         /* light text for dark mode */
-  --color-muted: #cccccc;        /* muted text for dark mode */
+  --color-muted: #aaaaaa;        /* muted text for dark mode */
   --color-primary: #ff007f;      /* keep accent colors same */
   --color-secondary: #00f5ff;    /* keep accent colors same */
   --color-accent: #ff007f;       /* keep accent colors same */
@@ -75,66 +71,13 @@
   --color-warning: #ffbb33;      /* keep warning color same */
   --color-error: #ff4444;        /* keep error color same */
   --color-border: #ffffff;       /* light borders for dark mode */
-  --shadow-color: #ffffff;       /* light shadows for dark mode */
-}
-
-@theme inline {
-  --color-main: var(--main);
-  --color-background: var(--background);
-  --color-secondary-background: var(--secondary-background);
-  --color-foreground: var(--foreground);
-  --color-main-foreground: var(--main-foreground);
-  --color-border: var(--border);
-  --color-overlay: var(--overlay);
-  --color-ring: var(--ring);
-
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-
-  --spacing-boxShadowX: var(--box-shadow-x);
-  --spacing-boxShadowY: var(--box-shadow-y);
-  --spacing-reverseBoxShadowX: var(--reverse-box-shadow-x);
-  --spacing-reverseBoxShadowY: var(--reverse-box-shadow-y);
-
-  --radius-base: var(--border-radius);
-
-  --shadow-shadow: var(--shadow);
-  --shadow-nav: 4px 4px 0px 0px var(--border);
-  --shadow-darkNav: 4px 4px 0px 0px var(--dark-border);
-
-  --font-weight-base: var(--base-font-weight);
-  --font-weight-heading: var(--heading-font-weight);
-
-  --animate-marquee: marquee 5s linear infinite;
-  --animate-marquee2: marquee2 5s linear infinite;
-
-  --spacing-container: 1300px;
-
-  @keyframes marquee {
-    0% {
-      transform: translateX(0%);
-    }
-    100% {
-      transform: translateX(-100%);
-    }
-  }
-
-  @keyframes marquee2 {
-    0% {
-      transform: translateX(100%);
-    }
-    100% {
-      transform: translateX(0%);
-    }
-  }
+  --shadow-color: #cccccc;       /* light shadows for dark mode */
 }
 
 @layer base {
   body {
-    @apply font-bold text-foreground; /* Neo-Brutalism: Remove light font weights */
+    font-weight: 700;
+    color: var(--color-text);
   }
 
   h1,
@@ -143,7 +86,9 @@
   h4,
   h5,
   h6 {
-    @apply font-black uppercase tracking-wider; /* Neo-Brutalism: Bold headings */
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   /* Remove rounded corners globally for Neo-Brutalism */
