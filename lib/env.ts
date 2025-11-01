@@ -65,8 +65,16 @@ const featureFlagsSchema = z.object({
 
 // Monitoring Schema
 const monitoringSchema = z.object({
-  LOGGING_ENDPOINT: z.string().url().optional().or(z.literal('')),
-  MONITORING_ENDPOINT: z.string().url().optional().or(z.literal('')),
+  LOGGING_ENDPOINT: z.union([
+    z.string().url(),
+    z.literal(''),
+    z.undefined()
+  ]).optional().default(undefined),
+  MONITORING_ENDPOINT: z.union([
+    z.string().url(),
+    z.literal(''),
+    z.undefined()
+  ]).optional().default(undefined),
   METRICS_ENABLED: z.coerce.boolean().default(true),
   TRACING_ENABLED: z.coerce.boolean().default(true),
 })
