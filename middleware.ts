@@ -1,7 +1,6 @@
 import { NextResponse, URLPattern } from "next/server"
 import type { NextRequest } from "next/server"
 
-import { fetchSlug } from "@/lib/db"
 import { routeConfig } from "@/config/routes"
 
 // Import unified middleware system
@@ -71,6 +70,8 @@ async function handleRedirects(req: NextRequest) {
               ? "code"
               : "course" // Default to course instead of "default" string
 
+      // Lazy import to avoid loading db during build time
+      const { fetchSlug } = await import("@/lib/db")
       const slug = await fetchSlug(type, id)
       if (slug) {
         const newUrl = req.nextUrl.clone()

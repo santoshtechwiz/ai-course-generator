@@ -280,7 +280,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
       return (
         <div
           key={index}
-          className="absolute top-0 w-1 h-full bg-amber-500 dark:bg-amber-400 transform -translate-x-1/2 cursor-pointer z-20 hover:w-2 transition-all duration-150 border-x-2 border-neutral-950 dark:border-neutral-50"
+          className="absolute top-0 w-1 h-full bg-warning transform -translate-x-1/2 cursor-pointer z-20 hover:w-2 transition-all duration-150 border-x-2 border-border"
           style={{ left: `${position}%` }}
           onClick={(e) => {
             e.stopPropagation()
@@ -300,11 +300,11 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
     }
   }, [])
 
-  // Consistent button classes - all buttons same size
-  const buttonBase = "h-11 w-11 rounded-none border-3 border-neutral-950 dark:border-neutral-50 transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[1px] active:translate-y-[1px]"
-  const buttonPrimary = `${buttonBase} bg-neutral-950 dark:bg-neutral-50 text-neutral-50 dark:text-neutral-950 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:active:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]`
-  const buttonSecondary = `${buttonBase} bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:active:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]`
-  const buttonActive = `${buttonBase} shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] dark:active:shadow-[1px_1px_0px_0px_rgba(255,255,255,1)]`
+  // Consistent button classes using theme variables - all buttons same size
+  const buttonBase = "h-11 w-11 rounded-none border-3 border-border transition-all duration-200 hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[1px] active:translate-y-[1px]"
+  const buttonPrimary = `${buttonBase} bg-primary text-primary-foreground shadow-neo hover:shadow-neo-hover active:shadow-neo-active`
+  const buttonSecondary = `${buttonBase} bg-muted text-foreground shadow-neo-sm hover:shadow-neo active:shadow-neo-active`
+  const buttonActive = `${buttonBase} shadow-neo-sm hover:shadow-neo active:shadow-neo-active`
 
   return (
     <div
@@ -324,13 +324,13 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
       onClick={(e) => e.stopPropagation()}
     >
       {/* Gradient overlay */}
-      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-neutral-50/95 dark:from-neutral-950/95 via-neutral-50/80 dark:via-neutral-950/80 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
 
       {/* Progress Bar */}
       <div className="relative px-4 sm:px-6 mb-4">
         <div
           ref={progressBarRef}
-          className="relative h-4 bg-neutral-200 dark:bg-neutral-800 border-3 border-neutral-950 dark:border-neutral-50 cursor-pointer group hover:h-5 transition-all duration-200 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)]"
+          className="relative h-4 bg-muted border-3 border-border cursor-pointer group hover:h-5 transition-all duration-200 shadow-neo"
           onClick={handleSeek}
           onMouseMove={handleProgressHover}
           onMouseDown={handleMouseDown}
@@ -347,13 +347,13 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
         >
           {/* Buffered progress */}
           <div
-            className="absolute left-0 top-0 h-full bg-neutral-300 dark:bg-neutral-700 transition-all duration-300"
+            className="absolute left-0 top-0 h-full bg-muted/60 transition-all duration-300"
             style={{ width: `${loaded * 100}%` }}
           />
 
           {/* Played progress */}
           <div
-            className="absolute left-0 top-0 h-full bg-lime-400 dark:bg-lime-500 border-r-3 border-neutral-950 dark:border-neutral-50 transition-all duration-150"
+            className="absolute left-0 top-0 h-full bg-accent border-r-3 border-border transition-all duration-150"
             style={{ width: `${played * 100}%` }}
           />
 
@@ -366,19 +366,19 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.9 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-full mb-3 bg-neutral-50 dark:bg-neutral-950 text-neutral-950 dark:text-neutral-50 px-3 py-2 text-sm font-black uppercase tracking-wide pointer-events-none -translate-x-1/2 border-3 border-neutral-950 dark:border-neutral-50 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)]"
+              className="absolute bottom-full mb-3 bg-surface text-foreground px-3 py-2 text-sm font-black uppercase tracking-wide pointer-events-none -translate-x-1/2 border-3 border-border shadow-neo"
               style={{ left: `${hoverPosition * 100}%` }}
             >
               {formatTime(hoveredTime)}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-neutral-950 dark:border-t-neutral-50" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-border" />
             </motion.div>
           )}
 
           {/* Seek handle */}
           <div
             className={cn(
-              "absolute top-1/2 w-6 h-6 bg-neutral-950 dark:bg-neutral-50 border-3 border-neutral-950 dark:border-neutral-50 transform -translate-y-1/2 -translate-x-1/2 cursor-grab shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] opacity-0 group-hover:opacity-100 transition-all duration-200",
-              isDragging && "opacity-100 scale-125 cursor-grabbing shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]",
+              "absolute top-1/2 w-6 h-6 bg-primary border-3 border-border transform -translate-y-1/2 -translate-x-1/2 cursor-grab shadow-neo opacity-0 group-hover:opacity-100 transition-all duration-200",
+              isDragging && "opacity-100 scale-125 cursor-grabbing shadow-neo-hover",
             )}
             style={{ left: `${played * 100}%`, pointerEvents: "auto" }}
             onMouseDown={handleMouseDown}
@@ -390,7 +390,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
           {/* Progress indicator on hover */}
           {hoverPosition !== null && (
             <div
-              className="absolute top-0 h-full w-1 bg-neutral-950/60 dark:bg-neutral-50/60 pointer-events-none"
+              className="absolute top-0 h-full w-1 bg-foreground/60 pointer-events-none"
               style={{ left: `${hoverPosition * 100}%` }}
             />
           )}
@@ -398,7 +398,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
       </div>
 
       {/* Control Bar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4 bg-neutral-50/95 dark:bg-neutral-950/95 border-t-4 border-neutral-950 dark:border-neutral-50 backdrop-blur-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 px-4 sm:px-6 py-4 bg-surface/95 border-t-4 border-border backdrop-blur-sm">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           {/* Play/Pause */}
           <Button
@@ -412,7 +412,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                className="h-6 w-6 border-3 border-neutral-50 dark:border-neutral-950 border-t-transparent rounded-full"
+                className="h-6 w-6 border-3 border-primary-foreground border-t-transparent rounded-full"
               />
             ) : playing ? (
               <Pause className="h-6 w-6 fill-current" />
@@ -463,7 +463,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.9 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute bottom-full mb-3 left-0 bg-neutral-50 dark:bg-neutral-950 border-3 border-neutral-950 dark:border-neutral-50 p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)]"
+                  className="absolute bottom-full mb-3 left-0 bg-surface border-3 border-border p-4 shadow-neo"
                   onMouseEnter={() => setShowVolumeSlider(true)}
                   onMouseLeave={() => setShowVolumeSlider(false)}
                 >
@@ -475,7 +475,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                     className="w-28 h-3"
                     aria-label="Volume"
                   />
-                  <div className="text-center text-neutral-950 dark:text-neutral-50 font-black text-xs mt-2">
+                  <div className="text-center text-foreground font-black text-xs mt-2">
                     {Math.round(localVolume)}%
                   </div>
                 </motion.div>
@@ -484,7 +484,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
           </div>
 
           {/* Time Display */}
-          <div className="text-sm text-neutral-950 dark:text-neutral-50 font-black tabular-nums px-3 py-2 bg-neutral-200 dark:bg-neutral-800 border-2 border-neutral-950 dark:border-neutral-50 hidden sm:block shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
+          <div className="text-sm text-foreground font-black tabular-nums px-3 py-2 bg-muted border-2 border-border hidden sm:block shadow-neo-sm">
             <span>{formatTime(duration * played)}</span>
             <span className="mx-1.5 opacity-60">/</span>
             <span className="opacity-80">{formatTime(duration)}</span>
@@ -495,18 +495,18 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
         <div className="flex items-center gap-2 flex-shrink-0">
           {onToggleAutoPlayVideo && (
             <div className={cn(
-              "flex items-center gap-2 px-3 h-11 rounded-none border-3 border-neutral-950 dark:border-neutral-50 transition-all duration-200 cursor-pointer shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]",
+              "flex items-center gap-2 px-3 h-11 rounded-none border-3 border-border transition-all duration-200 cursor-pointer shadow-neo hover:shadow-neo-hover hover:translate-x-[-1px] hover:translate-y-[-1px]",
               autoPlayVideo 
-                ? "bg-lime-400 dark:bg-lime-500" 
-                : "bg-neutral-200 dark:bg-neutral-800"
+                ? "bg-success/20" 
+                : "bg-muted"
             )}>
               <Zap className={cn(
                 "h-4 w-4 flex-shrink-0 transition-colors",
-                autoPlayVideo ? "text-neutral-950 dark:text-neutral-950" : "text-neutral-950/60 dark:text-neutral-50/60"
+                autoPlayVideo ? "text-success" : "text-foreground/60"
               )} />
               <span className={cn(
                 "text-xs font-black uppercase tracking-wider hidden sm:inline transition-colors",
-                autoPlayVideo ? "text-neutral-950 dark:text-neutral-950" : "text-neutral-950/70 dark:text-neutral-50/70"
+                autoPlayVideo ? "text-success" : "text-foreground/70"
               )}>Auto</span>
               <Switch
                 checked={autoPlayVideo}
@@ -526,18 +526,18 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
 
           {hasNextVideo && onToggleAutoPlayNext && (
             <div className={cn(
-              "flex items-center gap-2 px-3 h-11 rounded-none border-3 border-neutral-950 dark:border-neutral-50 transition-all duration-200 cursor-pointer shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[-1px] hover:translate-y-[-1px]",
+              "flex items-center gap-2 px-3 h-11 rounded-none border-3 border-border transition-all duration-200 cursor-pointer shadow-neo hover:shadow-neo-hover hover:translate-x-[-1px] hover:translate-y-[-1px]",
               autoPlayNext 
-                ? "bg-amber-400 dark:bg-amber-500" 
-                : "bg-neutral-200 dark:bg-neutral-800"
+                ? "bg-warning/20" 
+                : "bg-muted"
             )}>
               <SkipForward className={cn(
                 "h-4 w-4 flex-shrink-0 transition-colors",
-                autoPlayNext ? "text-neutral-950 dark:text-neutral-950" : "text-neutral-950/60 dark:text-neutral-50/60"
+                autoPlayNext ? "text-warning" : "text-foreground/60"
               )} />
               <span className={cn(
                 "text-xs font-black uppercase tracking-wider hidden sm:inline transition-colors",
-                autoPlayNext ? "text-neutral-950 dark:text-neutral-950" : "text-neutral-950/70 dark:text-neutral-50/70"
+                autoPlayNext ? "text-warning" : "text-foreground/70"
               )}>Next</span>
               <Switch
                 checked={autoPlayNext}
@@ -562,7 +562,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
             <Button
               variant="ghost"
               size="icon"
-              className={cn(buttonActive, "bg-cyan-400 dark:bg-cyan-500 text-neutral-950 dark:text-neutral-950")}
+              className={cn(buttonActive, "bg-accent text-foreground")}
               onClick={onNextVideo}
               disabled={!canAccessNextVideo}
               title={nextVideoTitle}
@@ -586,20 +586,20 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-40 bg-neutral-50 dark:bg-neutral-950 border-4 border-neutral-950 dark:border-neutral-50 text-neutral-950 dark:text-neutral-50 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] p-0"
+              className="w-40 bg-surface border-4 border-border text-foreground shadow-neo-heavy p-0"
             >
-              <div className="px-4 py-3 text-xs font-black border-b-4 border-neutral-950 dark:border-neutral-50 uppercase tracking-wider">
+              <div className="px-4 py-3 text-xs font-black border-b-4 border-border uppercase tracking-wider">
                 Speed
               </div>
               {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
                 <DropdownMenuItem
                   key={speed}
                   onClick={() => onPlaybackRateChange(speed)}
-                  className="hover:bg-lime-400 dark:hover:bg-lime-500 hover:text-neutral-950 dark:hover:text-neutral-950 flex justify-between items-center font-black px-4 py-3 cursor-pointer border-b-2 border-neutral-950/20 dark:border-neutral-50/20 last:border-0 focus:bg-lime-400 dark:focus:bg-lime-500"
+                  className="hover:bg-accent hover:text-foreground flex justify-between items-center font-black px-4 py-3 cursor-pointer border-b-2 border-border/20 last:border-0 focus:bg-accent"
                 >
                   <span>{speed === 1 ? "Normal" : `${speed}x`}</span>
                   {playbackRate === speed && (
-                    <div className="w-3 h-3 bg-neutral-950 dark:bg-neutral-50 border-2 border-neutral-950 dark:border-neutral-50" />
+                    <div className="w-3 h-3 bg-primary border-2 border-border" />
                   )}
                 </DropdownMenuItem>
               ))}
@@ -616,8 +616,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                 buttonActive,
                 "relative hidden sm:flex",
                 notesPanelOpen 
-                  ? "bg-emerald-400 dark:bg-emerald-500 text-neutral-950 dark:text-neutral-950" 
-                  : "bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50",
+                  ? "bg-success text-foreground" 
+                  : "bg-muted text-foreground",
               )}
               aria-label="Notes"
             >
@@ -626,7 +626,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 dark:bg-rose-600 text-[10px] text-neutral-50 dark:text-neutral-50 font-black flex items-center justify-center border-2 border-neutral-950 dark:border-neutral-50"
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-error text-[10px] text-primary-foreground font-black flex items-center justify-center border-2 border-border"
                 >
                   {notesCount > 9 ? "9+" : notesCount}
                 </motion.div>
@@ -644,8 +644,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                 buttonActive,
                 "hidden sm:flex",
                 bookmarkPanelOpen 
-                  ? "bg-amber-400 dark:bg-amber-500 text-neutral-950 dark:text-neutral-950" 
-                  : "bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50",
+                  ? "bg-warning text-foreground" 
+                  : "bg-muted text-foreground",
               )}
               aria-label="Bookmarks"
             >
@@ -663,8 +663,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                 buttonActive,
                 "hidden sm:flex",
                 isPiPActive 
-                  ? "bg-violet-400 dark:bg-violet-500 text-neutral-950 dark:text-neutral-950" 
-                  : "bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50",
+                  ? "bg-secondary text-foreground" 
+                  : "bg-muted text-foreground",
               )}
               aria-label="Picture-in-Picture"
             >
@@ -682,8 +682,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                 buttonActive,
                 "hidden sm:flex",
                 isTheaterMode 
-                  ? "bg-cyan-400 dark:bg-cyan-500 text-neutral-950 dark:text-neutral-950" 
-                  : "bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50",
+                  ? "bg-accent text-foreground" 
+                  : "bg-muted text-foreground",
               )}
               aria-label="Theater mode"
             >
@@ -699,8 +699,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
             className={cn(
               buttonActive,
               isFullscreen 
-                ? "bg-neutral-950 dark:bg-neutral-50 text-neutral-50 dark:text-neutral-950" 
-                : "bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-neutral-50",
+                ? "bg-primary text-primary-foreground" 
+                : "bg-muted text-foreground",
             )}
             aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
