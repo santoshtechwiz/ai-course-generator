@@ -4,7 +4,8 @@ import { getAuthSession } from "@/lib/auth";
 import prisma from "@/lib/db";
 
 // Helper to safely parse JSON fields
-function safeParse(value, fallback) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function safeParse(value: any, fallback: any): any {
   if (typeof value !== "string") return value ?? fallback;
   try {
     return JSON.parse(value);
@@ -14,7 +15,8 @@ function safeParse(value, fallback) {
 }
 
 // Extract completed chapters from chapterProgress JSON field
-function extractCompletedChapters(chapterProgress) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function extractCompletedChapters(chapterProgress: any): number[] {
   let parsed;
   if (typeof chapterProgress === 'object' && chapterProgress !== null) {
     parsed = chapterProgress;
@@ -147,6 +149,8 @@ export async function POST(req: NextRequest) {
 
     // Persist progress for each course
     const results = [];
+    const completedChaptersMap: Record<string, number[]> = {}; // ✅ Build map for response
+    
     for (const [courseId, progressData] of courseProgressMap.entries()) {
       // Get existing progress
       const existingProgress = await prisma.courseProgress.findUnique({
@@ -161,6 +165,25 @@ export async function POST(req: NextRequest) {
       // Merge completedChapters
       const existingCompletedChapters = extractCompletedChapters(existingProgress?.chapterProgress);
       const updatedCompletedChapters = Array.from(new Set([...(existingCompletedChapters || []), ...(progressData.completedChapters || [])]));
+      
+      // ✅ CRITICAL: Also query database for any chapters that may have been marked complete
+      // This ensures we catch ALL completed chapters, not just those in events
+      const dbCompletedChapters = await prisma.chapterProgress.findMany({
+        where: {
+          userId,
+          courseId: Number(courseId),
+          isCompleted: true,
+        },
+        select: {
+          chapterId: true,
+        },
+      });
+      
+      const dbCompletedIds = dbCompletedChapters.map(c => c.chapterId);
+      const allCompletedChapters = Array.from(new Set([...updatedCompletedChapters, ...dbCompletedIds]));
+      
+      // ✅ Store final list in map for response
+      completedChaptersMap[`${userId}:${courseId}`] = allCompletedChapters;
 
       // Prepare updated chapterProgress JSON
       const existingQuizProgress = existingProgress?.quizProgress ? safeParse(existingProgress.quizProgress, {}) : {};
@@ -168,15 +191,16 @@ export async function POST(req: NextRequest) {
       // Merge playedSeconds from chapterProgressMap
       const chapterMap = chapterProgressMap.get(courseId) || {};
       for (const [chapterId, ch] of Object.entries(chapterMap)) {
-        if (typeof ch.playedSeconds === 'number' && ch.playedSeconds > 0) {
-          existingLastPositions[chapterId] = ch.playedSeconds;
+        const chapterData = ch as { playedSeconds?: number; progress?: number; isCompleted?: boolean; completedAt?: string };
+        if (typeof chapterData.playedSeconds === 'number' && chapterData.playedSeconds > 0) {
+          existingLastPositions[chapterId] = chapterData.playedSeconds;
         }
       }
       existingQuizProgress.lastPositions = existingLastPositions;
 
       // Update or create the progress record
       const updatedChapterProgress = {
-        completedChapters: updatedCompletedChapters,
+        completedChapters: allCompletedChapters,
         lastPositions: existingQuizProgress.lastPositions || {}
       };
 
@@ -187,26 +211,13 @@ export async function POST(req: NextRequest) {
             courseId: Number(courseId)
           }
         }
-      });
+      })
       
-      const completedCount = updatedCompletedChapters.length;
-      const calculatedProgress = totalChapters > 0 ? (completedCount / totalChapters) * 100 : 0;
+      const completedCount = allCompletedChapters.length
+      const calculatedProgress = totalChapters > 0 ? (completedCount / totalChapters) * 100 : 0
 
       // Use the higher of existing progress or calculated progress
-      const finalProgress = Math.max(progressData.progress || 0, calculatedProgress);
-
-      // Debug: log what we will persist for this course so we can trace completedChapters/lastPositions
-      try {
-        console.log('[events/sync] Persisting courseProgress:', {
-          userId,
-          courseId: Number(courseId),
-          updatedChapterProgress,
-          finalProgress,
-          progressData
-        })
-      } catch (e) {
-        console.warn('[events/sync] Failed to stringify persist debug payload', e)
-      }
+      const finalProgress = Math.max(progressData.progress || 0, calculatedProgress)
 
       const updatedProgress = await prisma.courseProgress.upsert({
         where: {
@@ -244,7 +255,9 @@ export async function POST(req: NextRequest) {
       message: "Events processed and progress updated",
       updatedCourses: results.map(r => r.courseId),
       count: events.length,
-      timestamp: body.timestamp || Date.now()
+      timestamp: body.timestamp || Date.now(),
+      // ✅ Return completedChapters map for client-side cache invalidation
+      completedChaptersMap
     });
   } catch (error) {
     return NextResponse.json({ 

@@ -9,6 +9,7 @@ import {
 } from "../interfaces";
 import { Quiz, CodeChallenge } from "@/app/types/types";
 import { getAIProviderConfig } from "../config/config";
+import { env } from "@/lib/env";
 
 /**
  * OpenAI provider implementation
@@ -16,7 +17,7 @@ import { getAIProviderConfig } from "../config/config";
 export class OpenAIProvider implements AIProvider {
   private client: OpenAI;
 
-  constructor(apiKey: string = process.env.OPENAI_API_KEY || "") {
+  constructor(apiKey: string = env.OPENAI_API_KEY) {
     const agent = new https.Agent({
       rejectUnauthorized: false,
     });

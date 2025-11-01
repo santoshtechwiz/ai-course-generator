@@ -6,7 +6,7 @@
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth"
 import { SubscriptionService } from "@/services/subscription-services"
-import type { SubscriptionPlanType } from "@/types/subscription"
+import type { SubscriptionPlanType } from "@/types/subscription-plans"
 import { prisma } from "@/lib/db"
 
 interface ValidationResult {

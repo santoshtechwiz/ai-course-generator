@@ -378,6 +378,21 @@ class CourseRepository extends BaseRepository<any> {
     
     return chapter;
   }
+
+  /**
+   * Update chapter transcript
+   */
+  async updateChapterTranscript(chapterId: number, transcript: string | null) {
+    const chapter = await prisma.chapter.update({
+      where: { id: chapterId },
+      data: { transcript },
+    });
+
+    // Clear chapter cache
+    courseCache.del(`chapter_${chapterId}`);
+
+    return chapter;
+  }
   /**
    * Get chapter by ID with specific fields
    */

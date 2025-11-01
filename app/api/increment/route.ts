@@ -9,9 +9,10 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Fire-and-forget increment - don't wait for the result
     viewCountQueue.increment(slug)
-    const currentViewCount = await viewCountQueue.getViewCount(slug)
 
+    // Return immediately without getting view count (not needed by middleware)
     return NextResponse.json({ status: 200 })
   } catch (error) {
     console.error("Error incrementing view count:", error)

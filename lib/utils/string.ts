@@ -279,3 +279,58 @@ export async function generateUniqueSlug(title: string, quizType?: string): Prom
 
   return uniqueSlug
 }
+
+// ============================================================================
+// DATE FORMATTING
+// ============================================================================
+
+/**
+ * Format a timestamp (number) to a readable date string
+ */
+function formatDate(timestamp: number): string {
+  return new Date(timestamp).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+/**
+ * Format a date string to a readable format
+ */
+function formatDateString(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+/**
+ * Format a date with time
+ */
+function formatDateTime(date: Date | string | number): string {
+  const dateObj = new Date(date)
+  return dateObj.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+export {
+  generateId,
+  generateIdWithLength,
+  generateSlug,
+  createSlug,
+  generateUniqueSlug,
+  formatDate,
+  formatDateString,
+  formatDateTime
+}

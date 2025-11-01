@@ -158,6 +158,9 @@ const SubscriptionPlanType = {
   ENTERPRISE: "ENTERPRISE"
 };
 
+// Default plan for new users
+export const DEFAULT_PLAN = SubscriptionPlanType.FREE;
+
 // Role types
 const ROLES = {
   USER: "USER",
@@ -174,11 +177,12 @@ const CACHE_KEYS = {
 };
 
 // Time constants in milliseconds
-const TIME = {
+export const TIME = {
   SECOND: 1000,
   MINUTE: 60 * 1000,
   HOUR: 60 * 60 * 1000,
-  DAY: 24 * 60 * 60 * 1000
+  DAY: 24 * 60 * 60 * 1000,
+  MONTH: 30 * 24 * 60 * 60 * 1000
 };
 
 // Cache duration constants in seconds
@@ -187,5 +191,16 @@ export const CACHE_DURATION = {
   COURSE_DATA: 300, // 5 minutes for course data
   RECOMMENDATIONS: 300, // 5 minutes for recommendations
   USER_PROFILE: 600, // 10 minutes for user profile
-  QUIZ_RESULTS: 1800 // 30 minutes for quiz results
+  QUIZ_RESULTS: 1800, // 30 minutes for quiz results
+  QUIZ_DETAILS: 900, // 15 minutes for quiz details
+};
+
+// Performance constants
+export const PERFORMANCE = {
+  DEBOUNCE_DELAY: 500, // Default debounce delay in milliseconds
+  CONCURRENCY_LIMIT: 3, // Maximum concurrent requests
+  CACHE_SIZE: 1000, // Default cache size
+  REQUEST_TIMEOUT: 30000, // 30 seconds timeout
+  BATCH_DELAY: 100, // Database batch delay in milliseconds
+  MAX_BATCH_SIZE: 10, // Maximum batch size for database operations
 };

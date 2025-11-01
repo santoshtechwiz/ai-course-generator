@@ -1,4 +1,4 @@
-import type { SubscriptionPlanType } from '@/types/subscription'
+import { SubscriptionPlanType } from '@/types/subscription-plans'
 import { hasMinimumPlan } from './planHierarchy'
 import { isFeatureEnabled as isFeatureFlagEnabled, getFeatureResult, type FeatureFlagContext } from './featureFlags'
 
@@ -45,8 +45,6 @@ export interface FeatureRequirement {
   requiresCredits?: boolean
   requireFeature?: (plan: SubscriptionPlanType) => boolean
 }
-
-import { SubscriptionPlanType } from '@/types/subscription-plans'
 
 export const FEATURE_REQUIREMENTS: Record<FeatureType, FeatureRequirement> = {
   // Exploration Features (Public Access)

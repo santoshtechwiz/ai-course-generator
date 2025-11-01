@@ -14,9 +14,9 @@ export const CHAT_CONFIG: ChatConfig = {
   defaultContextLimit: 3,
   subscribedContextLimit: 5,
   
-  // Token limits
-  freeMaxTokens: 250,
-  subscribedMaxTokens: 500,
+  // Token limits (reduced for concise teacher-style responses)
+  freeMaxTokens: 150, // 2-3 sentence responses
+  subscribedMaxTokens: 200, // Slightly longer for paid users
   
   // Caching
   cacheEnabled: true,
@@ -46,11 +46,12 @@ export const WELCOME_SUGGESTIONS = [
   'How do I upgrade my plan?',
 ]
 
-export const OFF_TOPIC_RESPONSE = `I'm CourseAI, your learning assistant! I'm here to help with:
+export const OFF_TOPIC_RESPONSE = `I'm your virtual teacher for CourseAI! I only help with educational topics. I can't answer questions about ${['weather', 'news', 'entertainment', 'recipes', 'shopping'].join(', ')} etc.
 
-📚 **Course Discovery** - "Show me JavaScript courses"
-🎯 **Quiz Practice** - "Create a quiz on Python"
-💡 **Concept Explanation** - "Explain what is REST API"
-🔧 **Platform Help** - "How do I upgrade my plan?"
+🎓 **Ask me about:**
+• Course recommendations - "Show me Python courses"
+• Learning concepts - "Explain machine learning"
+• Quiz creation - "Create a JavaScript quiz"
+• Platform features - "How do I upgrade?"
 
-What would you like to learn today?`
+What would you like to study today?`

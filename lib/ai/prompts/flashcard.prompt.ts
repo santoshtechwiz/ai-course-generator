@@ -9,22 +9,30 @@ import type { AIMessage } from '@/lib/ai/interfaces'
 interface FlashcardPromptOptions {
   topic: string
   count: number
+  isSubscribed?: boolean
 }
 
 /**
  * Build flashcard generation prompt
  */
 export function buildFlashcardPrompt(options: FlashcardPromptOptions): AIMessage[] {
-  const { topic, count } = options
+  const { topic, count, isSubscribed = false } = options
+  
+  const systemMessage: AIMessage = isSubscribed
+    ? {
+        role: 'system',
+        content: 'You are an expert AI educator that generates high-quality, comprehensive flashcards for deep learning. Create sophisticated questions that promote critical thinking and detailed answers that provide complete understanding.',
+      }
+    : {
+        role: 'system',
+        content: 'You are an AI that generates flashcards for studying. Create concise, memorable flashcards with clear questions and comprehensive answers.',
+      }
   
   return [
-    {
-      role: 'system',
-      content: 'You are an AI that generates flashcards for studying. Create concise, memorable flashcards with clear questions and comprehensive answers.',
-    },
+    systemMessage,
     {
       role: 'user',
-      content: `Generate ${count} flashcards about "${topic}". Each should have a question and answer. Focus on key concepts, definitions, and important facts that students need to remember.`,
+      content: `Generate ${count} flashcards about "${topic}". Each should have a question and answer. Focus on key concepts, definitions, and important facts that students need to remember.${isSubscribed ? ' Include advanced analysis questions, real-world applications, and detailed explanations that connect multiple concepts.' : ''}`,
     },
   ]
 }

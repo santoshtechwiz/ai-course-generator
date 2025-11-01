@@ -1,6 +1,4 @@
-import type { SubscriptionPlanType } from '@/types/subscription'
-import type { PlanConfig } from '@/types/subscription-plans'
-import { SubscriptionPlanType } from '@/types/subscription-plans'
+import { SubscriptionPlanType, type PlanConfig } from '@/types/subscription-plans'
 
 // Plan hierarchy definition - maps plans to numeric levels
 const PLAN_HIERARCHY: Record<SubscriptionPlanType, number> = {

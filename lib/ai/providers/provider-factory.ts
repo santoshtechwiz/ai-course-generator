@@ -3,6 +3,7 @@ import { OpenAIProvider } from "./openai-provider";
 import { GoogleAIProvider } from "./google-ai-provider";
 import { AnthropicProvider } from "./anthropic-provider";
 import { AIProvider } from "../interfaces";
+import { env } from "@/lib/env";
 
 /**
  * Available AI providers
@@ -15,7 +16,7 @@ export type AIProviderType = "openai" | "google" | "anthropic";
 export class AIProviderFactory {
   /**
    * Create an AI provider instance
-   * 
+   *
    * @param type The type of AI provider to create
    * @param apiKey Optional API key for the provider
    * @returns An instance of the AI provider
@@ -36,17 +37,15 @@ export class AIProviderFactory {
 
 /**
  * Get the configured AI provider
- * 
+ *
  * @returns The default AI provider from environment configuration
  */
 export function getAIProvider(): AIProvider {
-  const providerType = (process.env.AI_PROVIDER_TYPE as AIProviderType) || "openai";
-  const apiKey = process.env.AI_PROVIDER_API_KEY || undefined;
-  
-  return AIProviderFactory.createProvider(providerType, apiKey);
-}
+  const providerType = env.AI_PROVIDER_TYPE;
+  // API key will be retrieved from env within each provider constructor
 
-/**
+  return AIProviderFactory.createProvider(providerType);
+}/**
  * The default AI provider instance - lazy loaded to avoid initialization issues
  */
 let _defaultAIProvider: AIProvider | null = null;

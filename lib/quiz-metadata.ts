@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { generateQuizMetadata as generateSEOQuizMetadata } from "@/lib/seo"
+import { getQuizPageConfig, generateSEOMetadata } from "@/lib/seo"
 
 /**
  * Simplified Quiz Metadata Generator
@@ -81,14 +81,15 @@ export function generateQuizMetadata({
     `${config.description}${topic ? ` on ${topic}` : ''}${questionCount ? `. ${questionCount} questions` : ''}.`
 
   // Use the existing SEO system with correct parameters
-  const base = generateSEOQuizMetadata({
+  const quizConfig = getQuizPageConfig({
     title: dynamicTitle,
     description: dynamicDescription,
-    slug: slug || quizType,
-    quizType: quizType,
+    category: topic,
     difficulty: difficulty,
-    questionsCount: questionCount,
+    url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://courseai.io'}/quiz/${slug || quizType}`,
   })
+
+  const base = generateSEOMetadata(quizConfig)
 
   // Apply robots noindex when required (not-found/private)
   if (noIndex) {

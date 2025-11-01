@@ -5,7 +5,7 @@
  * based on the user's subscription plan.
  */
 
-import type { SubscriptionPlanType } from '@/types/subscription'
+import type { SubscriptionPlanType } from '@/types/subscription-plans'
 import { AIBaseService, type AIServiceContext } from './AIBaseService'
 import BasicAIService from './BasicAIService'
 import PremiumAIService from './PremiumAIService'

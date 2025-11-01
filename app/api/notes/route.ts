@@ -14,6 +14,15 @@ const createNoteSchema = z.object({
     .refine((note) => !note.includes("Introduction to"), {
       message: "Note content cannot contain course titles. Please enter your own notes."
     })
+    .refine((note) => !note.includes("Bookmark at "), {
+      message: "Note content cannot contain automatic bookmark information. Please enter your own notes."
+    })
+    .refine((note) => !note.includes("Chapter "), {
+      message: "Note content cannot contain chapter information. Please enter your own notes."
+    })
+    .refine((note) => !/^\d{1,2}:\d{2}(:\d{2})?$/.test(note.trim()), {
+      message: "Note content cannot be just a timestamp. Please enter your own notes."
+    })
     .refine((note) => note.trim().length >= 5, {
       message: "Note content must be at least 5 characters long"
     }),
@@ -38,7 +47,7 @@ export async function GET(request: NextRequest) {
       userId: session.user.id,
       note: {
         not: null,
-        not: "", // Exclude empty notes
+        notIn: [""], // Exclude empty notes
       },
       // Filter out notes that look like course/chapter titles with timestamps
       // These are likely invalid notes created by mistake
@@ -51,6 +60,16 @@ export async function GET(request: NextRequest) {
         {
           note: {
             contains: "Introduction to", // Exclude notes that start with course titles
+          }
+        },
+        {
+          note: {
+            contains: "Bookmark at ", // Exclude automatic bookmark timestamps
+          }
+        },
+        {
+          note: {
+            contains: "Chapter ", // Exclude chapter references
           }
         }
       ]

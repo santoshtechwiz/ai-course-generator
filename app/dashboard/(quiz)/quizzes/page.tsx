@@ -4,7 +4,7 @@ import { getAuthSession } from "@/lib/auth"
 import { getQuizzes, type QuizListItem } from "@/app/actions/getQuizes"
 import ClientOnly from "@/components/ClientOnly"
 import { GlobalLoader } from "@/components/ui/loader"
-import { generateMetadata, JsonLD } from "@/lib/seo"
+import { generateMetadata, JsonLD, SchemaScript } from "@/lib/seo"
 import EnhancedQuizzesClient from "./components/QuizzesClient"
 
 export const metadata: Metadata = generateMetadata({
@@ -55,9 +55,8 @@ const Page = async () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <JsonLD
-        type="default"
-        data={{
+      <SchemaScript
+        schema={{
           "@context": "https://schema.org",
           "@type": "WebPage",
           name: "Interactive Quizzes",

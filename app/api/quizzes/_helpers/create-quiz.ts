@@ -2,19 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { getAuthSession } from "@/lib/auth"
 import { prisma } from "@/lib/db"
 import { generateUniqueSlug } from "@/lib/utils/string"
-import { McqQuizService } from "@/app/services/mcq-quiz.service"
-import { OpenEndedQuizService } from "@/app/services/openended-quiz.service"
-import { BlanksQuizService } from "@/app/services/blanks-quiz.service"
 import { CodeQuizService } from "@/app/services/code-quiz.service"
 import { QuestionRepository } from "@/app/repositories/question.repository"
 import { QuizRepository } from "@/app/repositories/quiz.repository"
-import { UserRepository } from "@/app/repositories/user.repository"
-import { creditService, CreditOperationType } from "@/services/credit-service"
+import { AIContextProvider, AIServiceFactoryV2 } from "@/lib/ai/infrastructure"
 import type { QuizType } from "@/app/types/quiz-types"
 
 const questionRepo = new QuestionRepository()
 const quizRepo = new QuizRepository()
-const userRepo = new UserRepository()
 
 function makeKey(question: any, fallbackAnswer: string = ""): string {
   const q = String(question?.question || "").trim()
@@ -25,9 +20,8 @@ function makeKey(question: any, fallbackAnswer: string = ""): string {
 export async function createQuizForType(req: NextRequest, quizType: string): Promise<NextResponse> {
   try {
     const session = await getAuthSession()
-    const userId = session?.user?.id
 
-    if (!userId) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 })
     }
 
@@ -56,23 +50,15 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 })
     }
 
-    // SECURE: Atomic credit validation and deduction to prevent race conditions
-    const creditDeduction = 1 // Standard 1 credit per quiz
-    const creditResult = await creditService.executeCreditsOperation(
-      userId,
-      creditDeduction,
-      CreditOperationType.QUIZ_CREATION,
-      {
-        description: `${normalizedType} quiz creation: ${title}`,
-        quizType: normalizedType,
-        questionAmount: amount,
-        difficulty
-      }
-    )
+    // Create unified AI context - this handles all validation, subscription, and credit checks
+    const contextProvider = new AIContextProvider()
+    const context = await contextProvider.createContext(session, req)
 
-    if (!creditResult.success) {
-      return NextResponse.json({ 
-        error: creditResult.error || "Insufficient credits" 
+    // Validate that the user can create this type of quiz
+    const capabilityCheck = AIServiceFactoryV2.validateServiceCapability(context, `generate${normalizedType.charAt(0).toUpperCase() + normalizedType.slice(1)}Quiz`)
+    if (!capabilityCheck.supported) {
+      return NextResponse.json({
+        error: capabilityCheck.reason || "Feature not available for your plan"
       }, { status: 403 })
     }
 
@@ -80,51 +66,91 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
     if (normalizedType === "code") {
       const language = (body.language || body.lang || "JavaScript").toString()
+
+      // Create AI service with unified context
+      const aiService = AIServiceFactoryV2.createService(context)
+
+      // Generate code quiz using new architecture (premium feature)
+      const result = await (aiService as any).generateCodeQuiz({
+        topic: title,
+        language,
+        numberOfQuestions: amount,
+        difficulty: difficulty as 'easy' | 'medium' | 'hard'
+      })
+
+      if (!result.success) {
+        return NextResponse.json({
+          error: result.error || "Failed to generate code quiz"
+        }, { status: 500 })
+      }
+
       const service = new CodeQuizService()
-      const result = await service.generateCodeQuiz(userId, language, title, difficulty, amount)
-      
-      console.log(`[Quiz API] Successfully created code quiz ${result.userQuizId} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
-      return NextResponse.json({ 
+      const quizResult = await service.generateCodeQuiz(context.userId, language, title, difficulty, amount)
+
+      console.log(`[Quiz API] Successfully created code quiz ${quizResult.userQuizId} for user ${context.userId}. Credits remaining: ${context.subscription.credits.available}`)
+      return NextResponse.json({
         success: true,
         message: "Code quiz created successfully!",
-        userQuizId: result.userQuizId, 
-        slug: result.slug,
-        creditsRemaining: creditResult.newBalance 
+        userQuizId: quizResult.userQuizId,
+        slug: quizResult.slug,
+        creditsRemaining: context.subscription.credits.available
       })
     }
 
     if (normalizedType === "mcq") {
-      const service = new McqQuizService()
-      const userType = session.user?.userType || 'FREE'
-      // Pass sufficient credits since deduction already happened atomically above
-      const gen = await service.generateQuiz({ amount, title, difficulty, type: "mcq", userId, userType, credits: 999 })
-      const questions = Array.isArray(gen?.questions) ? gen.questions : gen
+      // Create AI service with unified context
+      const aiService = AIServiceFactoryV2.createService(context)
 
-      const created = await quizRepo.createUserQuiz(userId, title, "mcq", slug)
+      // Generate MCQ quiz using new architecture
+      const result = await aiService.generateMultipleChoiceQuiz({
+        topic: title,
+        numberOfQuestions: amount,
+        difficulty: difficulty as 'easy' | 'medium' | 'hard'
+      })
+
+      if (!result.success) {
+        return NextResponse.json({
+          error: result.error || "Failed to generate MCQ quiz"
+        }, { status: 500 })
+      }
+
+      const questions = Array.isArray(result.data) ? result.data : []
+
+      const created = await quizRepo.createUserQuiz(context.userId, title, "mcq", slug)
       if (Array.isArray(questions) && questions.length > 0) {
         await questionRepo.createQuestions(questions, created.id, "mcq")
       }
 
-      // NOTE: Credits already deducted atomically above - no need to call userRepo.updateUserCredits
-
-      console.log(`[Quiz API] Successfully created MCQ quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
-      return NextResponse.json({ 
+      console.log(`[Quiz API] Successfully created MCQ quiz ${created.id} for user ${context.userId}. Credits remaining: ${context.subscription.credits.available}`)
+      return NextResponse.json({
         success: true,
         message: "MCQ quiz created successfully!",
-        userQuizId: created.id, 
+        userQuizId: created.id,
         slug,
-        creditsRemaining: creditResult.newBalance 
+        creditsRemaining: context.subscription.credits.available
       })
     }
 
     if (normalizedType === "openended") {
-      const service = new OpenEndedQuizService()
-      const userType = session.user?.userType || 'FREE'
-      // Pass sufficient credits since deduction already happened atomically above
-      const quiz = await service.generateQuiz({ title, amount, difficulty, userType, userId, credits: 999 })
-      const qList: any[] = Array.isArray((quiz as any)?.questions) ? (quiz as any).questions : []
+      // Create AI service with unified context
+      const aiService = AIServiceFactoryV2.createService(context)
 
-      const created = await quizRepo.createUserQuiz(userId, title, "openended", slug)
+      // Generate open-ended quiz using new architecture (premium feature)
+      const result = await (aiService as any).generateOpenEndedQuestionsQuiz({
+        topic: title,
+        numberOfQuestions: amount,
+        difficulty: difficulty as 'easy' | 'medium' | 'hard'
+      })
+
+      if (!result.success) {
+        return NextResponse.json({
+          error: result.error || "Failed to generate open-ended quiz"
+        }, { status: 500 })
+      }
+
+      const qList: any[] = Array.isArray(result.data) ? result.data : []
+
+      const created = await quizRepo.createUserQuiz(context.userId, title, "openended", slug)
       if (qList.length > 0) {
         await questionRepo.createQuestions(qList, created.id, "openended")
         // Map created questions back to metadata rows by (question+answer)
@@ -158,26 +184,36 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         }
       }
 
-      // NOTE: Credits already deducted atomically above - no need to call userRepo.updateUserCredits
-
-      console.log(`[Quiz API] Successfully created openended quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
-      return NextResponse.json({ 
+      console.log(`[Quiz API] Successfully created openended quiz ${created.id} for user ${context.userId}. Credits remaining: ${context.subscription.credits.available}`)
+      return NextResponse.json({
         success: true,
         message: "Open-ended quiz created successfully!",
-        userQuizId: created.id, 
+        userQuizId: created.id,
         slug,
-        creditsRemaining: creditResult.newBalance 
+        creditsRemaining: context.subscription.credits.available
       })
     }
 
     if (normalizedType === "blanks") {
-      const service = new BlanksQuizService()
-      const userType = session.user?.userType || 'FREE'
-      // Pass sufficient credits since deduction already happened atomically above
-      const quiz = await service.generateQuiz({ title, amount, userType, userId, credits: 999 })
-      const qList: any[] = Array.isArray((quiz as any)?.questions) ? (quiz as any).questions : []
+      // Create AI service with unified context
+      const aiService = AIServiceFactoryV2.createService(context)
 
-      const created = await quizRepo.createUserQuiz(userId, title, "blanks", slug)
+      // Generate blanks quiz using new architecture
+      const result = await aiService.generateFillInTheBlanksQuiz({
+        topic: title,
+        numberOfQuestions: amount,
+        difficulty: difficulty as 'easy' | 'medium' | 'hard'
+      })
+
+      if (!result.success) {
+        return NextResponse.json({
+          error: result.error || "Failed to generate blanks quiz"
+        }, { status: 500 })
+      }
+
+      const qList: any[] = Array.isArray(result.data) ? result.data : []
+
+      const created = await quizRepo.createUserQuiz(context.userId, title, "blanks", slug)
       if (qList.length > 0) {
         await questionRepo.createQuestions(qList, created.id, "blanks")
         // Attach hints/tags/difficulty
@@ -211,33 +247,35 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         }
       }
 
-      // NOTE: Credits already deducted atomically above - no need to call userRepo.updateUserCredits
-
-      console.log(`[Quiz API] Successfully created blanks quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
-      return NextResponse.json({ 
+      console.log(`[Quiz API] Successfully created blanks quiz ${created.id} for user ${context.userId}. Credits remaining: ${context.subscription.credits.available}`)
+      return NextResponse.json({
         success: true,
         message: "Blanks quiz created successfully!",
-        userQuizId: created.id, 
+        userQuizId: created.id,
         slug,
-        creditsRemaining: creditResult.newBalance 
+        creditsRemaining: context.subscription.credits.available
       })
     }
 
     if (normalizedType === "flashcard") {
       const count = amount
-      
-      // Use simple AI service
-      const { generateFlashcards } = await import("@/lib/ai/course-ai-service");
-      
-      const flashcardsQuiz = await generateFlashcards(
-        title,
-        count,
-        userId,
-        'FREE' as any,
-        999 // Pass sufficient credits since deduction already happened atomically above
-      );
-      
-      const cards = flashcardsQuiz.flashcards.map((card: any, index: number) => ({
+
+      // Create AI service with unified context
+      const aiService = AIServiceFactoryV2.createService(context)
+
+      // Generate flashcards using new architecture
+      const result = await aiService.generateFlashcards({
+        topic: title,
+        count: count
+      })
+
+      if (!result.success) {
+        return NextResponse.json({
+          error: result.error || "Failed to generate flashcards"
+        }, { status: 500 })
+      }
+
+      const cards = result.data.flashcards.map((card: any, index: number) => ({
         id: index + 1,
         question: card.question,
         answer: card.answer,
@@ -245,14 +283,14 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
 
       console.log(`[Quiz API] Generated ${cards?.length || 0} flashcards for "${title}"`)
 
-      const created = await quizRepo.createUserQuiz(userId, title, "flashcard", slug)
+      const created = await quizRepo.createUserQuiz(context.userId, title, "flashcard", slug)
       console.log(`[Quiz API] Created UserQuiz with ID ${created.id}`)
 
       if (Array.isArray(cards) && cards.length > 0) {
         const flashcardData = cards.map((c: any) => ({
           question: String(c.question),
           answer: String(c.answer),
-          userId,
+          userId: context.userId,
           userQuizId: created.id,
           slug,
         }))
@@ -268,15 +306,13 @@ export async function createQuizForType(req: NextRequest, quizType: string): Pro
         console.warn(`[Quiz API] No valid flashcards to create for quiz ${created.id}`)
       }
 
-      // NOTE: Credits already deducted atomically above - no need to call userRepo.updateUserCredits
-
-      console.log(`[Quiz API] Successfully created flashcard quiz ${created.id} for user ${userId}. Credits remaining: ${creditResult.newBalance}`)
-      return NextResponse.json({ 
+      console.log(`[Quiz API] Successfully created flashcard quiz ${created.id} for user ${context.userId}. Credits remaining: ${context.subscription.credits.available}`)
+      return NextResponse.json({
         success: true,
         message: "Flashcards created successfully!",
-        userQuizId: created.id, 
+        userQuizId: created.id,
         slug,
-        creditsRemaining: creditResult.newBalance 
+        creditsRemaining: context.subscription.credits.available
       })
     }
 

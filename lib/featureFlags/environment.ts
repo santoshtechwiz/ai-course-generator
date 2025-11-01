@@ -128,7 +128,9 @@ export class EnvironmentFeatureFlags {
 
       // Plan requirement
       if (flag.minimumPlan && context.userPlan) {
-        if (!this.hasMinimumPlan(context.userPlan, flag.minimumPlan)) {
+        // Use centralized plan configuration instead of hardcoded logic
+        const { isFeatureEnabledForPlan } = require('./flags')
+        if (!isFeatureEnabledForPlan(context.userPlan, flagName)) {
           return {
             enabled: false,
             reason: `${flag.minimumPlan} plan required`,
@@ -216,16 +218,6 @@ export class EnvironmentFeatureFlags {
       hash = hash & hash // Convert to 32-bit integer
     }
     return Math.abs(hash)
-  }
-
-  /**
-   * Check if user has minimum plan level
-   */
-  private hasMinimumPlan(userPlan: string, requiredPlan: string): boolean {
-    const planHierarchy = { FREE: 0, BASIC: 1, PREMIUM: 2, ENTERPRISE: 3 }
-    const userLevel = planHierarchy[userPlan as keyof typeof planHierarchy] ?? 0
-    const requiredLevel = planHierarchy[requiredPlan as keyof typeof planHierarchy] ?? 0
-    return userLevel >= requiredLevel
   }
 
   /**

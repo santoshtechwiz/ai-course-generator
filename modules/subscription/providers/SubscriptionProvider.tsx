@@ -11,7 +11,7 @@ import {
 import { useSession } from 'next-auth/react';
 import { useAppSelector, useAppDispatch } from '@/store/hooks';
 import { setSubscriptionData } from '@/store/slices/subscriptionSlice';
-import type { SubscriptionData, SubscriptionPlanType, SubscriptionStatusType } from '@/types/subscription';
+import type { SubscriptionData, SubscriptionPlanType, SubscriptionStatusType } from '@/types/subscription-plans';
 
 // ============= Types =============
 

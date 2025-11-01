@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { SubscriptionData } from '@/types/subscription';
+import type { SubscriptionData } from '@/types/subscription-plans';
 
 interface SubscriptionState {
   data: SubscriptionData | null;

@@ -11,6 +11,7 @@ import { GlobalLoader } from "@/components/ui/loader"
 import { MotionProvider } from "@/components/MotionProvider"
 import { ConditionalFooter } from "@/components/layout/ConditionalFooter"
 import { ClientGuestProvider } from "@/components/guest/ClientGuestProvider"
+import { GlobalStructuredData } from "@/lib/seo/structured-data"
 
 import "../globals.css"
 
@@ -56,6 +57,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className="font-sans font-bold antialiased min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] neo-typography-body">
        
           <Providers session={session}>
+            {/* Global Structured Data for SEO */}
+            <GlobalStructuredData />
+
             {/* Skip Navigation for accessibility */}
             <a
               href="#main-content"

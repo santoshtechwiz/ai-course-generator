@@ -1,31 +1,28 @@
-/**
- * Shared Components - Centralized Exports
- * 
- * This file provides a single import point for commonly used shared components.
- * Use these components throughout the app for consistent UX and access control.
- */
+// Shared component exports
 
-// Subscription & Access Control Components
-export { default as SubscriptionUpgrade } from './SubscriptionUpgrade'
-export { 
-  SubscriptionUpgradeModal,
-  
-   
-} from './SubscriptionUpgrade'
+// SignIn components
+export { default as SignInPromptShared } from './SignInPromptShared'
+export { SignInPromptModal, SignInPromptPage, SignInPromptCard } from './SignInPromptShared'
+export { default as SignInPrompt } from './SignInPromptShared'
 
-export { default as SignInPrompt } from './SignInPrompt'
+// Upgrade/Subscription components
+export { SubscriptionUpgradeModal } from './SubscriptionUpgrade'
+export { UpgradeDialog } from './UpgradeDialog'
+export { UnifiedUpgradeTrigger } from './UnifiedUpgradeTrigger'
+export { default as UnifiedPdfGenerator } from './UnifiedPdfGenerator'
 
+// Credit components
+export { CreditCounter } from './CreditCounter'
+export { CreditGuidanceBanner } from './CreditGuidanceBanner'
 
+// Other shared components
+export { AppDialog, default as ShareDialog } from './ShareDialog'
+export { default as Logo } from './Logo'
+export { default as Footer } from './Footer'
 
-
-// Visual lock wrapper for obfuscating content
-
-
-// New: Enhanced Auth & Upgrade Components
-
-
-
-
-
-
-// Re-export types for convenience
+// Layout & utility components
+export { ContextualUpgradePrompt } from './ContextualUpgradePrompt'
+export { default as GlassDoorLock } from './GlassDoorLock'
+export { BaseListLayout } from './BaseListLayout'
+export { ModuleLoadingSkeleton } from './ModuleLoadingSkeleton'
+export { default as RevealAnimation } from './RevealAnimation'

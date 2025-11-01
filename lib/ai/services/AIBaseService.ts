@@ -10,11 +10,9 @@
  * - Usage logging
  */
 
-import type { SubscriptionPlanType } from '@/types/subscription'
-import type { AIModelName, ModelConfiguration, FeatureAISettings } from '@/config/ai.config'
+import { SubscriptionPlanType, PLAN_CONFIGURATIONS, type AIModelName, type ModelConfiguration } from '@/types/subscription-plans'
 import { 
   getModelConfig, 
-  getFeatureSettings, 
   getPlanLimits,
   getRateLimits,
   AI_ERROR_MESSAGES 
@@ -75,7 +73,7 @@ export abstract class AIBaseService {
    */
   private getDefaultProvider(): AIProvider {
     // Dynamic import to avoid circular dependency
-    const { getDefaultAIProvider } = require('@/lib/ai')
+    const { getDefaultAIProvider } = require('../providers/provider-factory')
     return getDefaultAIProvider()
   }
 
@@ -398,26 +396,38 @@ export abstract class AIBaseService {
   // ============= Utility Methods =============
 
   /**
-   * Get feature settings for a specific feature
-   */
-  protected getFeatureSettings(featureKey: string): FeatureAISettings | undefined {
-    return getFeatureSettings(featureKey)
-  }
-
-  /**
-   * Check if feature is enabled
+   * Check if feature is enabled for current subscription
    */
   protected isFeatureEnabled(featureKey: string): boolean {
-    const settings = this.getFeatureSettings(featureKey)
-    return settings?.enabled ?? false
+    const planConfig = PLAN_CONFIGURATIONS[this.context.subscriptionPlan]
+    
+    switch (featureKey) {
+      case 'quiz-mcq':
+        return planConfig.mcqGenerator
+      case 'quiz-blanks':
+        return planConfig.fillInBlanks
+      case 'quiz-openended':
+        return planConfig.openEndedQuestions
+      case 'quiz-code':
+        return planConfig.codeQuiz
+      case 'quiz-video':
+        return planConfig.videoQuiz
+      case 'course-creation':
+        return planConfig.courseCreation
+      case 'content-creation':
+        return planConfig.contentCreation
+      default:
+        return false
+    }
   }
 
   /**
-   * Get credit cost for a feature
+   * Get credit cost for a feature based on subscription
    */
   protected getCreditCost(featureKey: string): number {
-    const settings = this.getFeatureSettings(featureKey)
-    return settings?.creditCost ?? 0
+    // Use centralized credit costs from PLAN_CONFIGURATIONS
+    const planConfig = PLAN_CONFIGURATIONS[this.context.subscriptionPlan]
+    return planConfig.creditCosts[featureKey as keyof typeof planConfig.creditCosts] ?? 0
   }
 }
 
