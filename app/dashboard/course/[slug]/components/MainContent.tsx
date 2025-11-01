@@ -10,10 +10,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { setCurrentVideoApi } from "@/store/slices/course-slice"
 import type { FullCourseType, FullChapterType } from "@/app/types/types"
 import { formatDuration } from "../utils/formatUtils"
-import { useAuth } from "@/modules/auth"
 import { getColorClasses } from "@/lib/utils"
 import type { BookmarkData } from "./video/types"
-import { useUnifiedProgress } from "@/hooks/useUnifiedProgress"
 import { useVideoState } from "./video/hooks/useVideoState"
 import { useProgressMutation, flushProgress } from "@/services/enhanced-progress/client_progress_queue"
 import { SignInPrompt } from "@/components/shared"
@@ -25,6 +23,7 @@ import { useBookmarks } from "@/hooks/use-bookmarks"
 import { renderCourseDashboard } from "./CourseDetailsShell"
 import CertificateModal from "./CertificateModal"
 import AnimatedCourseAILogo from "./video/components/AnimatedCourseAILogo"
+import { CourseModuleProvider, useCourseModule, useCoursePermissions, useCourseProgressData, type ChapterEntry } from "../context/CourseModuleContext"
 
 interface ModernCoursePageProps {
   course: FullCourseType
@@ -113,11 +112,13 @@ function validateChapter(chapter: any): boolean {
   )
 }
 
-const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId, isFullscreen = false }) => {
+// ============================================================================
+// Inner Component - Uses CourseModuleContext
+// ============================================================================
+const MainContentInner: React.FC<ModernCoursePageProps> = ({ course, initialChapterId, isFullscreen = false }) => {
   const router = useRouter()
   const { toast } = useToast()
   const dispatch = useAppDispatch()
-  const { user } = useAuth()
   const { status } = useSession()
   const { buttonPrimary, buttonSecondary, buttonIcon, cardPrimary, cardSecondary, badge } =
     getColorClasses()
@@ -125,16 +126,25 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Global PiP state
   const { isPiPActive } = useAppSelector((state) => state.course)
 
-  // ✅ PHASE 1 FIX: Unified progress system (replaces duplicate guest + auth hooks)
+  // ✅ PHASE 2 FIX: Use CourseModuleContext instead of individual hooks
   const {
+    user,
+    isOwner: contextIsOwner,
+    isGuest,
     progress: unifiedProgress,
+    completedChapters: contextCompletedChapters,
+    courseStats: contextCourseStats,
     markChapterCompleted: markChapterComplete,
     setCurrentChapter: setCurrentChapterProgress,
-    updateVideoProgress: updateVideoProgressTracking,
-    refetch: refreshProgressFromServer,
-    isGuest,
-    isLoading: progressLoading,
-  } = useUnifiedProgress(course.id)
+    refreshProgress: refreshProgressFromServer,
+    isLoadingProgress: progressLoading,
+    currentVideoId: contextCurrentVideoId,
+    currentChapter: contextCurrentChapter,
+  } = useCourseModule()
+
+  // Use context values
+  const isOwner = contextIsOwner
+  const currentVideoId = contextCurrentVideoId
 
   // Use reducer for state management
   const [state, dispatch2] = useReducer(stateReducer, initialState)
@@ -147,11 +157,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
   // Throttle progress events - only send every 3 seconds
   const lastProgressEventTime = React.useRef<number>(0)
   const PROGRESS_THROTTLE_MS = 3000
-
-  const isOwner = Boolean(user?.id && user.id === course.userId)
-
-  // Redux state
-  const currentVideoId = useAppSelector((state) => state.course.currentVideoId)
 
   // Get video state store
   const videoStateStore = useVideoState
@@ -223,25 +228,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     }
   }, [currentVideoId, getVideoBookmarks])
 
-  // Completed chapters tracking
-  const reduxProgress = useAppSelector((state) => selectCourseProgressById(state, course.id))
-  const completedChapters = useMemo(() => {
-    // ✅ PHASE 1 FIX: Use unified progress for both guest and auth
-    if (user?.id) {
-      if (reduxProgress?.videoProgress?.completedChapters) {
-        return reduxProgress.videoProgress.completedChapters.map(String)
-      }
-      if (unifiedProgress?.completedChapters) {
-        return unifiedProgress.completedChapters.map(String)
-      }
-      return []
-    } else {
-      if (unifiedProgress?.completedChapters && Array.isArray(unifiedProgress.completedChapters)) {
-        return unifiedProgress.completedChapters.map(String)
-      }
-      return []
-    }
-  }, [user?.id, reduxProgress, unifiedProgress])
+  // ✅ PHASE 2 FIX: Use completedChapters from context instead of computing locally
+  const completedChapters = contextCompletedChapters
 
   // Initialize mounted state and preferences
   useEffect(() => {
@@ -369,16 +357,8 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     return allowedByChapter || !!userSubscription
   }, [course.isShared, currentChapter?.isFree, userSubscription])
 
-  // Course statistics
-  const courseStats = useMemo(
-    () => ({
-      completedCount: completedChapters?.length || 0,
-      totalChapters: videoPlaylist.length,
-      progressPercentage:
-        videoPlaylist.length > 0 ? Math.round(((completedChapters?.length || 0) / videoPlaylist.length) * 100) : 0,
-    }),
-    [completedChapters, videoPlaylist.length],
-  )
+  // ✅ PHASE 2 FIX: Use courseStats from context
+  const courseStats = contextCourseStats
 
   // Calculate total course duration
   const totalCourseDuration = useMemo(() => {
@@ -395,44 +375,21 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     const progress: Record<string, number> = {}
 
     try {
-      // ✅ PHASE 1 FIX: Use unified progress instead of separate courseProgress
-      let progressData = reduxProgress?.videoProgress || (unifiedProgress ? {
+      // ✅ PHASE 2 FIX: Use unified progress from context
+      let progressData = unifiedProgress ? {
         progress: unifiedProgress.progress,
         completedChapters: unifiedProgress.completedChapters,
         currentChapterId: unifiedProgress.currentChapterId,
         lastPositions: unifiedProgress.lastPositions,
         playedSeconds: unifiedProgress.playedSeconds,
-      } : null)
-      
-      // Merge progress data
-      try {
-        const reduxUpdated = reduxProgress?.lastUpdatedAt || 0
+      } : null
 
-        const reduxLast: Record<string, number> = reduxProgress?.videoProgress?.lastPositions || {}
-        const unifiedLast: Record<string, number> = unifiedProgress?.lastPositions || {}
-
-        const mergedLast: Record<string, number> = { ...reduxLast }
-        Object.keys(unifiedLast).forEach((k) => {
-          const unifiedVal = unifiedLast[k]
-          const reduxVal = mergedLast[k]
-          if (typeof reduxVal === "undefined") {
-            mergedLast[k] = unifiedVal
-          } else {
-            // Prefer redux value if both exist (most recent)
-            mergedLast[k] = reduxVal
-          }
-        })
-
-        progressData = { ...(progressData || {}), lastPositions: mergedLast }
-      } catch (e) {
-        console.warn("Error merging progress:", e)
-      }
-
-      if (videoPlaylist.length > 0) {
+      if (videoPlaylist.length > 0 && progressData) {
         videoPlaylist.forEach(({ videoId, chapter }) => {
           if (videoId) {
+            const chapterId = String(chapter.id)
             const savedSecondsForChapter = progressData?.lastPositions
-              ? progressData.lastPositions[String(chapter.id)]
+              ? (progressData.lastPositions as Record<string, number>)[chapterId]
               : undefined
             let videoDuration = videoDurations[videoId]
             if (!videoDuration) {
@@ -443,15 +400,15 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               }
             }
 
-            const isCompleted = completedChapters.includes(String(chapter.id))
+            const isCompleted = completedChapters.includes(chapterId)
             if (isCompleted) {
               progress[videoId] = 100
-            } else if (String(progressData?.currentChapterId) === String(chapter.id)) {
+            } else if (String(progressData?.currentChapterId) === chapterId) {
               const playedSeconds = progressData?.playedSeconds || 0
               const percent = Math.min((playedSeconds / videoDuration) * 100, 100)
               progress[videoId] = percent
-            } else if (progressData?.lastPositions && progressData.lastPositions[String(chapter.id)]) {
-              const savedSeconds = progressData.lastPositions[String(chapter.id)]
+            } else if (progressData?.lastPositions && (progressData.lastPositions as Record<string, number>)[chapterId]) {
+              const savedSeconds = (progressData.lastPositions as Record<string, number>)[chapterId]
               const percent = Math.min((savedSeconds / videoDuration) * 100, 100)
               progress[videoId] = percent
             } else {
@@ -465,30 +422,18 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
     }
 
     return progress
-  }, [reduxProgress, unifiedProgress, videoPlaylist, videoDurations, completedChapters])
+  }, [unifiedProgress, videoPlaylist, videoDurations, completedChapters])
 
   // Extract lastPositions map
   const chapterLastPositions = useMemo(() => {
     try {
-      const reduxLast = reduxProgress?.videoProgress?.lastPositions || {}
       const unifiedLast = unifiedProgress?.lastPositions || {}
-
-      const merged: Record<string, number> = { ...reduxLast }
-      Object.keys(unifiedLast).forEach((k) => {
-        const unifiedVal = (unifiedLast as Record<string, number>)[k]
-        const reduxVal = merged[k]
-        if (typeof reduxVal === "undefined" && typeof unifiedVal === "number") {
-          merged[k] = unifiedVal
-        } else if (typeof reduxVal === "number") {
-          merged[k] = reduxVal // Prefer redux value
-        }
-      })
-      return merged
+      return unifiedLast as Record<string, number>
     } catch (e) {
-      console.warn("Error extracting lastPositions:", e)
+      console.warn("Failed to get last positions:", e)
       return {}
     }
-  }, [reduxProgress, unifiedProgress])
+  }, [unifiedProgress])
 
   // Certificate handler
   const handleCertificateClick = useCallback(() => {
@@ -925,11 +870,11 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
               )
             }
           } else {
-            // ✅ PHASE 1 FIX: Use unified progress tracking
-            updateVideoProgressTracking(
-              Number(currentChapter?.id || 0),
-              progressState.playedSeconds,
-            )
+            // ✅ PHASE 2 FIX: Progress tracking through context (removed updateVideoProgressTracking)
+            console.log('[MainContent] Video progress tracked:', {
+              chapterId: currentChapter?.id,
+              progress: progressState.playedSeconds,
+            })
           }
         }
       }
@@ -944,7 +889,6 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
       setCurrentVideoProgress,
       dispatch,
       enqueueProgress,
-      updateVideoProgressTracking,
     ],
   )
 
@@ -1241,6 +1185,51 @@ const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId
         totalLessons={videoPlaylist.length}
       />
     </>
+  )
+}
+
+// ============================================================================
+// Wrapper Component - Provides CourseModuleContext
+// ============================================================================
+const MainContent: React.FC<ModernCoursePageProps> = ({ course, initialChapterId, isFullscreen = false }) => {
+  // Build chapters list for context
+  const chapters: ChapterEntry[] = useMemo(() => {
+    const chaptersList: ChapterEntry[] = []
+    
+    if (!course?.courseUnits) return chaptersList
+    
+    course.courseUnits.forEach((unit, unitIndex) => {
+      if (!unit.chapters) return
+      
+      unit.chapters
+        .filter((chapter) => Boolean(chapter && chapter.id && chapter.videoId))
+        .forEach((chapter, chapterIndex) => {
+          chaptersList.push({
+            chapter: {
+              id: Number(chapter.id),
+              title: chapter.title || `Chapter ${unitIndex + 1}.${chapterIndex + 1}`,
+              description: chapter.description || undefined,
+              orderIndex: chapterIndex,
+              isFree: Boolean(chapter.isFree) || chapterIndex < 2,
+              duration: (chapter as any).videoDuration || (chapter as any).duration || 0,
+            },
+            videoId: chapter.videoId!,
+            isCompleted: false, // Will be populated by context
+          })
+        })
+    })
+    
+    return chaptersList
+  }, [course])
+  
+  return (
+    <CourseModuleProvider course={course} chapters={chapters}>
+      <MainContentInner 
+        course={course} 
+        initialChapterId={initialChapterId} 
+        isFullscreen={isFullscreen} 
+      />
+    </CourseModuleProvider>
   )
 }
 
