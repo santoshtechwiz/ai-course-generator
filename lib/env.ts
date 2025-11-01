@@ -201,6 +201,8 @@ function getDevelopmentDefaults() {
     FEATURE_FLAG_ANALYTICS: true,
 
     // Monitoring defaults
+    LOGGING_ENDPOINT: undefined,
+    MONITORING_ENDPOINT: undefined,
     METRICS_ENABLED: true,
     TRACING_ENABLED: true,
 

@@ -3,7 +3,7 @@
  * Comprehensive monitoring, metrics, tracing, and structured logging
  */
 
-import { env, isDevelopment, isProduction } from './env'
+// import { env, isDevelopment, isProduction } from './env' // Moved to lazy import
 
 // ============================================================================
 // METRICS COLLECTOR
@@ -40,12 +40,14 @@ class MetricsCollector {
     this.metrics.push(metric)
 
     // In development, log metrics
-    if (isDevelopment()) {
+    const isDev = process.env.NODE_ENV === 'development'
+    if (isDev) {
       console.log(`[METRIC] ${name}: ${value}`, tags)
     }
 
     // Send to monitoring service in production
-    if (isProduction()) {
+    const isProd = process.env.NODE_ENV === 'production'
+    if (isProd) {
       this.sendToMonitoringService(metric)
     }
   }
@@ -67,7 +69,8 @@ class MetricsCollector {
       console.warn(`[PERF] Slow operation: ${name} took ${duration}ms`, tags)
     }
 
-    if (isProduction()) {
+    const isProd = process.env.NODE_ENV === 'production'
+    if (isProd) {
       this.sendPerformanceToMonitoring(metric)
     }
   }
@@ -90,6 +93,7 @@ class MetricsCollector {
    * Send metrics to external monitoring service
    */
   private async sendToMonitoringService(metric: MetricData) {
+    const { env } = await import('./env')
     if (!env.MONITORING_ENDPOINT) return
 
     try {
@@ -158,7 +162,8 @@ class StructuredLogger {
   /**
    * Log with structured context
    */
-  private log(level: LogEntry['level'], message: string, context?: LogContext) {
+  private async log(level: LogEntry['level'], message: string, context?: LogContext) {
+    const { env } = await import('./env')
     const entry: LogEntry = {
       timestamp: new Date().toISOString(),
       level,
@@ -169,7 +174,8 @@ class StructuredLogger {
     }
 
     // Console output for development
-    if (isDevelopment()) {
+    const isDev = env.NODE_ENV === 'development'
+    if (isDev) {
       const color = {
         debug: '\x1b[36m',    // Cyan
         info: '\x1b[32m',     // Green
@@ -182,7 +188,8 @@ class StructuredLogger {
     }
 
     // Send to logging service in production
-    if (isProduction()) {
+    const isProd = env.NODE_ENV === 'production'
+    if (isProd) {
       this.sendToLoggingService(entry)
     }
 
@@ -195,19 +202,19 @@ class StructuredLogger {
     }
   }
 
-  debug(message: string, context?: LogContext) { this.log('debug', message, context) }
-  info(message: string, context?: LogContext) { this.log('info', message, context) }
-  warn(message: string, context?: LogContext) { this.log('warn', message, context) }
-  error(message: string, context?: LogContext) { this.log('error', message, context) }
-  critical(message: string, context?: LogContext) { this.log('critical', message, context) }
+  async debug(message: string, context?: LogContext) { await this.log('debug', message, context) }
+  async info(message: string, context?: LogContext) { await this.log('info', message, context) }
+  async warn(message: string, context?: LogContext) { await this.log('warn', message, context) }
+  async error(message: string, context?: LogContext) { await this.log('error', message, context) }
+  async critical(message: string, context?: LogContext) { await this.log('critical', message, context) }
 
   /**
    * Log API request
    */
-  logApiRequest(method: string, path: string, statusCode: number, duration: number, context?: LogContext) {
+  async logApiRequest(method: string, path: string, statusCode: number, duration: number, context?: LogContext) {
     const level = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info'
 
-    this.log(level, `API ${method} ${path} ${statusCode}`, {
+    await this.log(level, `API ${method} ${path} ${statusCode}`, {
       ...context,
       operation: 'api_request',
       duration,
@@ -229,8 +236,8 @@ class StructuredLogger {
   /**
    * Log database operation
    */
-  logDatabaseOperation(operation: string, table: string, duration: number, context?: LogContext) {
-    this.log('debug', `DB ${operation} on ${table}`, {
+  async logDatabaseOperation(operation: string, table: string, duration: number, context?: LogContext) {
+    await this.log('debug', `DB ${operation} on ${table}`, {
       ...context,
       operation: 'db_operation',
       duration,
@@ -246,8 +253,8 @@ class StructuredLogger {
   /**
    * Log AI operation
    */
-  logAIOperation(provider: string, model: string, tokens: number, duration: number, context?: LogContext) {
-    this.log('info', `AI ${provider} ${model} completion`, {
+  async logAIOperation(provider: string, model: string, tokens: number, duration: number, context?: LogContext) {
+    await this.log('info', `AI ${provider} ${model} completion`, {
       ...context,
       operation: 'ai_completion',
       duration,
@@ -262,6 +269,7 @@ class StructuredLogger {
    * Send logs to external logging service
    */
   private async sendToLoggingService(entry: LogEntry) {
+    const { env } = await import('./env')
     if (!env.LOGGING_ENDPOINT) return
 
     try {

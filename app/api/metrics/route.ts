@@ -5,10 +5,12 @@
 
 import { NextResponse } from 'next/server'
 import { observability } from '@/lib/observability'
-import { env } from '@/lib/env'
 
 export async function GET() {
   try {
+    // Import env lazily to avoid validation during build
+    const { env } = await import('@/lib/env')
+
     // Check if metrics are enabled (temporarily disabled to fix build)
     // if (!env.METRICS_ENABLED) {
     //   return NextResponse.json({
