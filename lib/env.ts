@@ -11,28 +11,12 @@ import { z } from 'zod'
 
 // Database Configuration Schema
 const databaseSchema = z.object({
-  DATABASE_URL: z.preprocess(
-    (val) => {
-      if (val === '' || val === undefined || val === null || val === 'undefined') {
-        return undefined
-      }
-      return val
-    },
-    z.string().url('DATABASE_URL must be a valid URL').optional()
-  ),
+  DATABASE_URL: z.string().optional(),
 })
 
 // Authentication Schema
 const authSchema = z.object({
-  NEXTAUTH_URL: z.preprocess(
-    (val) => {
-      if (val === '' || val === undefined || val === null || val === 'undefined') {
-        return undefined
-      }
-      return val
-    },
-    z.string().url('NEXTAUTH_URL must be a valid URL').optional()
-  ),
+  NEXTAUTH_URL: z.string().optional(),
   NEXTAUTH_SECRET: z.string().min(1, 'NEXTAUTH_SECRET is required').optional(),
 })
 
@@ -67,15 +51,7 @@ const aiProviderSchema = z.object({
 
 // Application Configuration Schema
 const appSchema = z.object({
-  NEXT_PUBLIC_APP_URL: z.preprocess(
-    (val) => {
-      if (val === '' || val === undefined || val === null || val === 'undefined') {
-        return undefined
-      }
-      return val
-    },
-    z.string().url('NEXT_PUBLIC_APP_URL must be a valid URL').optional()
-  ),
+  NEXT_PUBLIC_APP_URL: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
 })
@@ -89,26 +65,8 @@ const featureFlagsSchema = z.object({
 
 // Monitoring Schema
 const monitoringSchema = z.object({
-  LOGGING_ENDPOINT: z.preprocess(
-    (val) => {
-      // Handle empty strings, null, undefined, and literal "undefined" string
-      if (val === '' || val === undefined || val === null || val === 'undefined') {
-        return undefined
-      }
-      return val
-    },
-    z.string().url().optional()
-  ),
-  MONITORING_ENDPOINT: z.preprocess(
-    (val) => {
-      // Handle empty strings, null, undefined, and literal "undefined" string
-      if (val === '' || val === undefined || val === null || val === 'undefined') {
-        return undefined
-      }
-      return val
-    },
-    z.string().url().optional()
-  ),
+  LOGGING_ENDPOINT: z.string().optional(),
+  MONITORING_ENDPOINT: z.string().optional(),
   METRICS_ENABLED: z.coerce.boolean().default(true),
   TRACING_ENABLED: z.coerce.boolean().default(true),
 })
