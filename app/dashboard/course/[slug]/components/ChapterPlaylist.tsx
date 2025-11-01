@@ -190,62 +190,62 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
         </div>
       )}
 
-      <div className="flex-shrink-0 border-b-4 border-b-black bg-background">
+      <div className="flex-shrink-0 border-b-4 border-[hsl(var(--border))] bg-[hsl(var(--background))]">
         <div className="p-4 space-y-4">
-          <h2 className="font-bold text-base mb-2 line-clamp-2 uppercase tracking-tight">{course.title}</h2>
+          <h2 className="font-bold text-base mb-2 line-clamp-2 uppercase tracking-tight text-[hsl(var(--foreground))]">{course.title}</h2>
           
           {/* Statistics Grid - Neobrutalism Style */}
           <div className="grid grid-cols-3 gap-2 text-xs">
             {/* Completed Card - Highlighted */}
             <div className={cn(
-              "border-2 border-black p-3 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all",
+              "border-3 border-[hsl(var(--border))] p-3 text-center shadow-neo hover:shadow-neo-hover transition-all rounded-none",
               courseStatistics.completedCount > 0 
-                ? "bg-green-400 text-black font-black" 
-                : "bg-green-100 text-black"
+                ? "bg-[hsl(var(--success))] text-[hsl(var(--foreground))] font-black" 
+                : "bg-[hsl(var(--success))]/10 text-[hsl(var(--foreground))]"
             )}>
               <div className="font-black text-2xl">{courseStatistics.completedCount}</div>
               <div className="font-bold text-xs uppercase tracking-tight">
                 {courseStatistics.completedCount === 1 ? 'Completed' : 'Completed'}
               </div>
               {courseStatistics.completedCount > 0 && (
-                <div className="text-xs font-bold mt-1 text-green-900">✓ {((courseStatistics.completedCount / courseStatistics.totalChapters) * 100).toFixed(0)}%</div>
+                <div className="text-xs font-bold mt-1 opacity-80">✓ {((courseStatistics.completedCount / courseStatistics.totalChapters) * 100).toFixed(0)}%</div>
               )}
             </div>
             
             {/* Remaining Card */}
             <div className={cn(
-              "border-2 border-black p-3 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all",
+              "border-3 border-[hsl(var(--border))] p-3 text-center shadow-neo hover:shadow-neo-hover transition-all rounded-none",
               courseStatistics.remainingChapters === 0
-                ? "bg-green-400 text-black font-black"
-                : "bg-yellow-100 text-black"
+                ? "bg-[hsl(var(--success))] text-[hsl(var(--foreground))] font-black"
+                : "bg-[hsl(var(--warning))]/20 text-[hsl(var(--foreground))]"
             )}>
               <div className="font-black text-2xl">{courseStatistics.remainingChapters}</div>
               <div className="font-bold text-xs uppercase tracking-tight">Remaining</div>
               {courseStatistics.remainingChapters === 0 && (
-                <div className="text-xs font-bold mt-1 text-green-900">All Done! 🎉</div>
+                <div className="text-xs font-bold mt-1 opacity-80">All Done! 🎉</div>
               )}
             </div>
             
             {/* Total Hours Card */}
-            <div className="bg-blue-100 border-2 border-black p-3 text-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transition-all">
+            <div className="bg-[hsl(var(--accent))]/10 border-3 border-[hsl(var(--border))] p-3 text-center shadow-neo hover:shadow-neo-hover transition-all rounded-none text-[hsl(var(--foreground))]">
               <div className="font-black text-2xl">
                 {courseStatistics.totalHours}h
               </div>
               <div className="font-bold text-xs uppercase tracking-tight">Total Time</div>
-              <div className="text-xs font-bold mt-1 text-blue-900">{courseStatistics.remainingMinutes}m</div>
+              <div className="text-xs font-bold mt-1 opacity-80">{courseStatistics.remainingMinutes}m</div>
             </div>
           </div>
 
           {/* Progress Bar - Neobrutalism */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-black uppercase tracking-tight">Progress</span>
+              <span className="text-xs font-bold text-[hsl(var(--foreground))] uppercase tracking-tight">Progress</span>
               <div className="flex items-center gap-2">
                 <span className={cn(
-                  "text-xs font-black px-2 py-1 border border-black",
+                  "text-xs font-black px-2 py-1 border-3 border-[hsl(var(--border))] rounded-none",
                   overallProgress === 100 
-                    ? "bg-green-400 text-black"
-                    : "bg-white text-black"
+                    ? "bg-[hsl(var(--success))] text-[hsl(var(--foreground))]"
+                    : "bg-[hsl(var(--surface))] text-[hsl(var(--foreground))]"
                 )}>
                   {Math.round(overallProgress)}%
                 </span>
@@ -253,29 +253,29 @@ const ChapterPlaylist: React.FC<ChapterPlaylistProps> = ({
                 {milestoneData.shownMilestones.length > 0 && (
                   <div className="flex gap-1">
                     {milestoneData.shownMilestones.includes(25) && (
-                      <div className="text-xs bg-blue-300 border border-black px-1 py-0.5 font-bold">25% ✓</div>
+                      <div className="text-xs bg-[hsl(var(--accent))]/30 border-2 border-[hsl(var(--border))] px-1 py-0.5 font-bold rounded-none">25% ✓</div>
                     )}
                     {milestoneData.shownMilestones.includes(50) && (
-                      <div className="text-xs bg-purple-300 border border-black px-1 py-0.5 font-bold">50% ✓</div>
+                      <div className="text-xs bg-[hsl(var(--primary))]/30 border-2 border-[hsl(var(--border))] px-1 py-0.5 font-bold rounded-none">50% ✓</div>
                     )}
                     {milestoneData.shownMilestones.includes(75) && (
-                      <div className="text-xs bg-orange-300 border border-black px-1 py-0.5 font-bold">75% ✓</div>
+                      <div className="text-xs bg-[hsl(var(--warning))]/30 border-2 border-[hsl(var(--border))] px-1 py-0.5 font-bold rounded-none">75% ✓</div>
                     )}
                   </div>
                 )}
               </div>
             </div>
-            <div className="h-3 bg-neo-background border-2 border-neo-border relative overflow-hidden">
+            <div className="h-3 bg-[hsl(var(--background))] border-3 border-[hsl(var(--border))] relative overflow-hidden rounded-none">
               <div 
                 className={cn(
                   "h-full transition-all duration-300",
-                  overallProgress === 100 ? "bg-green-500" : "bg-black"
+                  overallProgress === 100 ? "bg-[hsl(var(--success))]" : "bg-[hsl(var(--foreground))]"
                 )} 
                 style={{ width: `${overallProgress}%` }} 
               />
               {overallProgress === 100 && (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-xs font-black text-white drop-shadow-lg">✓ COMPLETE</span>
+                  <span className="text-xs font-black text-[hsl(var(--background))] drop-shadow-lg">✓ COMPLETE</span>
                 </div>
               )}
             </div>

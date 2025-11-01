@@ -78,7 +78,7 @@ function ActionButtons({ slug, title, isOwner, courseId, className = "", variant
     }
   }
 
-  const handleFavoriteToggle = () => {
+  const handleFavoriteToggle = async () => {
     if (!isAuthenticated) {
       toast({
         title: "Sign in required",
@@ -87,30 +87,40 @@ function ActionButtons({ slug, title, isOwner, courseId, className = "", variant
       })
       return
     }
-    handleAction("favorite")
+    
+    // Optimistic update - show toast with new state
+    const newFavoriteState = !status.isFavorite
     toast({
-      title: status.isFavorite ? "Removed from favorites" : "Added to favorites",
-      description: status.isFavorite ? "Course removed from your favorites" : "Course added to your favorites",
+      title: newFavoriteState ? "Added to favorites" : "Removed from favorites",
+      description: newFavoriteState ? "Course added to your favorites" : "Course removed from your favorites",
+      variant: "default",
     })
+    
+    // Trigger the action (toast is already shown in the hook)
+    await handleAction("favorite")
   }
 
-  const handlePrivacyToggle = () => {
+  const handlePrivacyToggle = async () => {
     if (!isOwner) return
-    handleAction("privacy")
+    
+    // Optimistic update
+    const newPublicState = !status.isPublic
     toast({
-      title: status.isPublic ? "Made private" : "Made public",
-      description: status.isPublic ? "Course is now private" : "Course is now public",
+      title: newPublicState ? "Making public..." : "Making private...",
+      description: newPublicState ? "Course will be publicly visible" : "Course will be private",
     })
+    
+    await handleAction("privacy")
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!isOwner) return
     if (window.confirm("Are you sure you want to delete this course? This action cannot be undone.")) {
-      handleAction("delete")
       toast({
-        title: "Course deleted",
-        description: "The course has been permanently deleted",
+        title: "Deleting course...",
+        description: "Please wait while we delete this course",
       })
+      await handleAction("delete")
     }
   }
 
@@ -156,10 +166,12 @@ function ActionButtons({ slug, title, isOwner, courseId, className = "", variant
           onClick={handleFavoriteToggle}
           disabled={loading === "favorite"}
           className={cn(
-            "flex items-center gap-2 transition-all duration-200 hover:shadow-md",
+            "flex items-center gap-2 transition-all duration-200 hover:shadow-md focus-visible:ring-4 focus-visible:ring-[hsl(var(--accent))]/50 focus-visible:outline-none",
             status.isFavorite && "bg-[hsl(var(--accent))]/10 text-[hsl(var(--accent))] border-[hsl(var(--accent))]/20 hover:bg-[hsl(var(--accent))]/20 dark:bg-[hsl(var(--accent))]/10 dark:text-[hsl(var(--accent))] dark:border-[hsl(var(--accent))]/30 dark:hover:bg-[hsl(var(--accent))]/20",
             variant === "compact" && "px-3"
           )}
+          aria-label={status.isFavorite ? "Remove from favorites" : "Add to favorites"}
+          title={status.isFavorite ? "Remove from favorites" : "Add to favorites"}
         >
           {loading === "favorite" ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -181,7 +193,7 @@ function ActionButtons({ slug, title, isOwner, courseId, className = "", variant
             neo.badge,
             status.isPublic
               ? "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/20 dark:bg-[hsl(var(--success))]/10 dark:text-[hsl(var(--success))]"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300"
+              : "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]/80 dark:bg-[hsl(var(--muted))] dark:text-[hsl(var(--foreground))]"
           )}
         >
           {status.isPublic ? (

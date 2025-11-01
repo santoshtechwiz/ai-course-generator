@@ -49,21 +49,21 @@ import { BookmarkItem, CourseProgress } from "@/store/slices/course-slice"
 
 // 🎨 Optimized skeleton with reduced repaints
 const SkeletonLoader = () => (
-  <div className="space-y-4 p-6 bg-[var(--color-bg)]">
+  <div className="space-y-4 p-6 bg-[hsl(var(--background))]">
     <div className="space-y-2">
-      <div className="h-8 w-1/3 bg-[var(--color-muted)] border-2 border-[var(--color-border)] rounded-none shadow-[2px_2px_0_var(--shadow-color)] animate-pulse" />
-      <div className="h-4 w-2/3 bg-[var(--color-muted)] border-2 border-[var(--color-border)] rounded-none animate-pulse" />
+      <div className="h-8 w-1/3 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none shadow-neo animate-pulse" />
+      <div className="h-4 w-2/3 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none animate-pulse" />
     </div>
     <div className="space-y-3">
-      <div className="h-32 bg-[var(--color-muted)] border-3 border-[var(--color-border)] rounded-none shadow-[3px_3px_0_var(--shadow-color)] animate-pulse" />
-      <div className="h-20 bg-[var(--color-muted)] border-2 border-[var(--color-border)] rounded-none animate-pulse" />
-      <div className="h-20 bg-[var(--color-muted)] border-2 border-[var(--color-border)] rounded-none animate-pulse" />
+      <div className="h-32 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none shadow-neo animate-pulse" />
+      <div className="h-20 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none animate-pulse" />
+      <div className="h-20 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] rounded-none animate-pulse" />
     </div>
     <div className="space-y-2">
       {[100, 100, 80].map((width, i) => (
         <div
           key={i}
-          className="h-4 bg-[var(--color-muted)] border border-[var(--color-border)] rounded-none animate-pulse"
+          className="h-4 bg-[hsl(var(--muted))] border-2 border-[hsl(var(--border))] rounded-none animate-pulse"
           style={{ width: `${width}%` }}
         />
       ))}
@@ -85,19 +85,19 @@ const EmptyTabMessage = ({
     <div className="text-center space-y-6 max-w-md">
       <div
         className={cn(
-          "w-24 h-24 bg-[var(--color-muted)] border-4 border-[var(--color-border)]",
+          "w-24 h-24 bg-[hsl(var(--muted))] border-4 border-[hsl(var(--border))]",
           "flex items-center justify-center mx-auto rounded-none",
-          "shadow-[4px_4px_0_var(--shadow-color)]"
+          "shadow-neo"
         )}
       >
-        <Icon className="h-12 w-12 text-[var(--color-muted-text)]" />
+        <Icon className="h-12 w-12 text-[hsl(var(--foreground))]/60" />
       </div>
 
       <div className="space-y-2">
-        <h3 className="text-xl font-black uppercase tracking-wider text-[var(--color-text)]">
+        <h3 className="text-xl font-black uppercase tracking-wider text-[hsl(var(--foreground))]">
           {title}
         </h3>
-        <p className="text-sm font-bold text-[var(--color-muted-text)]">
+        <p className="text-sm font-bold text-[hsl(var(--foreground))]/60">
           {message}
         </p>
       </div>

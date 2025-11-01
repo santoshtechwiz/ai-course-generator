@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Switch } from "@/components/ui/switch"
 import { motion, AnimatePresence } from "framer-motion"
+import { toast } from "@/components/ui/use-toast"
 
 // Memoized slider to prevent unnecessary re-renders
 const MemoizedSlider = React.memo(Slider)
@@ -285,7 +286,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
       return (
         <div
           key={index}
-          className="absolute top-0 w-1 h-full bg-yellow-400 dark:bg-yellow-500 transform -translate-x-1/2 cursor-pointer z-20 hover:w-2 transition-all duration-150 border-x-2 border-black"
+          className="absolute top-0 w-1 h-full bg-[hsl(var(--warning))] transform -translate-x-1/2 cursor-pointer z-20 hover:w-2 transition-all duration-150 border-x-2 border-[hsl(var(--border))]"
           style={{ left: `${position}%` }}
           onClick={(e) => {
             e.stopPropagation()
@@ -324,13 +325,13 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
       onClick={(e) => e.stopPropagation()}
     >
       {/* Enhanced gradient overlay - better dark/light mode support */}
-      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-black via-black/80 to-transparent dark:from-black dark:via-black/85 dark:to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[hsl(var(--background))] via-[hsl(var(--background))]/80 to-transparent pointer-events-none" />
 
       {/* Enhanced Progress Bar - BRUTAL DESIGN with high contrast */}
       <div className="relative px-3 sm:px-6 mb-3 sm:mb-4">
         <div
           ref={progressBarRef}
-          className="relative h-3 sm:h-4 bg-gray-900 dark:bg-gray-950 border-3 border-white dark:border-white cursor-pointer group hover:h-4 sm:hover:h-5 transition-all duration-200 shadow-[0_4px_12px_rgba(0,0,0,0.9)]"
+          className="relative h-3 sm:h-4 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] cursor-pointer group hover:h-4 sm:hover:h-5 transition-all duration-200 shadow-neo"
           onClick={handleSeek}
           onMouseMove={handleProgressHover}
           onMouseDown={handleMouseDown}
@@ -347,13 +348,13 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
         >
           {/* Buffered progress */}
           <div
-            className="absolute left-0 top-0 h-full bg-gray-700 dark:bg-gray-800 transition-all duration-300"
+            className="absolute left-0 top-0 h-full bg-[hsl(var(--muted))]/60 transition-all duration-300"
             style={{ width: `${loaded * 100}%` }}
           />
 
-          {/* Played progress - Magenta/Pink */}
+          {/* Played progress - Using accent color */}
           <div
-            className="absolute left-0 top-0 h-full bg-pink-500 dark:bg-pink-600 border-r-3 border-white transition-all duration-150"
+            className="absolute left-0 top-0 h-full bg-[hsl(var(--accent))] border-r-3 border-[hsl(var(--border))] transition-all duration-150"
             style={{ width: `${played * 100}%` }}
           />
 
@@ -366,19 +367,19 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.9 }}
               transition={{ duration: 0.15 }}
-              className="absolute bottom-full mb-3 bg-white dark:bg-gray-100 text-black px-3 py-2 text-xs sm:text-sm font-black uppercase tracking-wide pointer-events-none -translate-x-1/2 border-3 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]"
+              className="absolute bottom-full mb-3 bg-[hsl(var(--surface))] text-[hsl(var(--foreground))] px-3 py-2 text-xs sm:text-sm font-black uppercase tracking-wide pointer-events-none -translate-x-1/2 border-3 border-[hsl(var(--border))] shadow-neo"
               style={{ left: `${hoverPosition * 100}%` }}
             >
               {formatTime(hoveredTime)}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-black" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-[hsl(var(--border))]" />
             </motion.div>
           )}
 
           {/* Enhanced seek handle */}
           <div
             className={cn(
-              "absolute top-1/2 w-5 h-5 sm:w-6 sm:h-6 bg-white dark:bg-gray-100 border-3 border-black transform -translate-y-1/2 -translate-x-1/2 cursor-grab shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] opacity-0 group-hover:opacity-100 transition-all duration-200",
-              isDragging && "opacity-100 scale-150 cursor-grabbing shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]",
+              "absolute top-1/2 w-5 h-5 sm:w-6 sm:h-6 bg-[hsl(var(--primary))] border-3 border-[hsl(var(--border))] transform -translate-y-1/2 -translate-x-1/2 cursor-grab shadow-neo opacity-0 group-hover:opacity-100 transition-all duration-200",
+              isDragging && "opacity-100 scale-150 cursor-grabbing shadow-neo-hover",
             )}
             style={{ left: `${played * 100}%`, pointerEvents: "auto" }}
             onMouseDown={handleMouseDown}
@@ -390,7 +391,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
           {/* Progress indicator on hover */}
           {hoverPosition !== null && (
             <div
-              className="absolute top-0 h-full w-1 bg-white/60 dark:bg-white/70 pointer-events-none"
+              className="absolute top-0 h-full w-1 bg-[hsl(var(--foreground))]/60 pointer-events-none"
               style={{ left: `${hoverPosition * 100}%` }}
             />
           )}
@@ -398,26 +399,26 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
       </div>
 
       {/* Enhanced Control Bar - Brutal design with dark mode */}
-      <div className="flex items-center justify-between gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4 bg-black/95 dark:bg-black border-t-4 border-white mx-0 mb-0 backdrop-blur-sm">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-2 px-3 sm:px-6 py-3 sm:py-4 bg-[hsl(var(--surface))]/95 border-t-4 border-[hsl(var(--border))] backdrop-blur-sm">
         <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
           {/* Play/Pause Button */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onPlayPause}
-            className="h-10 w-10 sm:h-12 sm:w-12 bg-white dark:bg-white hover:bg-gray-100 dark:hover:bg-gray-50 text-black transition-all border-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:shadow-[5px_5px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] rounded-none"
+            className="h-10 w-10 sm:h-12 sm:w-12 bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-[hsl(var(--primary-foreground))] transition-all border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-neo-active rounded-none"
             aria-label={playing ? "Pause" : "Play"}
           >
             {isBuffering ? (
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                className="h-5 w-5 sm:h-6 sm:w-6 border-3 border-black border-t-transparent rounded-full"
+                className="h-5 w-5 sm:h-6 sm:w-6 border-3 border-[hsl(var(--primary-foreground))] border-t-transparent rounded-full"
               />
             ) : playing ? (
-              <Pause className="h-5 w-5 sm:h-6 sm:w-6 fill-black" />
+              <Pause className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />
             ) : (
-              <Play className="h-5 w-5 sm:h-6 sm:w-6 ml-0.5 fill-black" />
+              <Play className="h-5 w-5 sm:h-6 sm:w-6 ml-0.5 fill-current" />
             )}
           </Button>
 
@@ -426,7 +427,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
             variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.max(0, duration * played - 10))}
-            className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
+            className="h-9 w-9 sm:h-10 sm:w-10 bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 text-[hsl(var(--foreground))] transition-all border-2 border-[hsl(var(--border))] shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
             aria-label="Rewind 10 seconds"
           >
             <RewindIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -437,7 +438,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
             variant="ghost"
             size="icon"
             onClick={() => onSeekChange(Math.min(duration, duration * played + 10))}
-            className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
+            className="h-9 w-9 sm:h-10 sm:w-10 bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 text-[hsl(var(--foreground))] transition-all border-2 border-[hsl(var(--border))] shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
             aria-label="Forward 10 seconds"
           >
             <FastForwardIcon className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -450,7 +451,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
               size="icon"
               onClick={onMute}
               onMouseEnter={() => setShowVolumeSlider(true)}
-              className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
+              className="h-9 w-9 sm:h-10 sm:w-10 bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 text-[hsl(var(--foreground))] transition-all border-2 border-[hsl(var(--border))] shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
               aria-label={muted ? "Unmute" : "Mute"}
             >
               {React.createElement(getVolumeIcon, { className: "h-4 w-4 sm:h-5 sm:w-5" })}
@@ -463,7 +464,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.9 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute bottom-full mb-3 left-0 bg-black dark:bg-gray-900 border-3 border-white p-4 shadow-[6px_6px_0px_0px_rgba(255,255,255,1)]"
+                  className="absolute bottom-full mb-3 left-0 bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] p-4 shadow-neo"
                   onMouseEnter={() => setShowVolumeSlider(true)}
                   onMouseLeave={() => setShowVolumeSlider(false)}
                 >
@@ -475,7 +476,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                     className="w-28 h-3"
                     aria-label="Volume"
                   />
-                  <div className="text-center text-white font-black text-xs mt-2">
+                  <div className="text-center text-[hsl(var(--foreground))] font-black text-xs mt-2">
                     {Math.round(localVolume)}%
                   </div>
                 </motion.div>
@@ -484,22 +485,29 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
           </div>
 
           {/* Time Display */}
-          <div className="text-xs sm:text-sm text-white font-black tabular-nums px-2 sm:px-3 py-1 bg-gray-900 dark:bg-gray-950 border-2 border-white hidden sm:block shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)]">
+          <div className="text-xs sm:text-sm text-[hsl(var(--foreground))] font-black tabular-nums px-2 sm:px-3 py-1 bg-[hsl(var(--muted))] border-2 border-[hsl(var(--border))] hidden sm:block shadow-neo-sm">
             <span>{formatTime(duration * played)}</span>
-            <span className="mx-1.5 text-gray-400">/</span>
-            <span className="text-gray-300">{formatTime(duration)}</span>
+            <span className="mx-1.5 opacity-60">/</span>
+            <span className="opacity-80">{formatTime(duration)}</span>
           </div>
         </div>
 
         {/* Center Controls - Auto toggles */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {onToggleAutoPlayVideo && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-cyan-500 dark:bg-cyan-600 border-2 border-white text-black dark:text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.4)] hover:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.4)] transition-all">
+            <div className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--accent))] hover:bg-[hsl(var(--accent))]/90 border-3 border-[hsl(var(--border))] text-[hsl(var(--foreground))] shadow-neo hover:shadow-neo-hover transition-all">
               <Zap className="h-4 w-4 flex-shrink-0" />
               <span className="text-xs font-black uppercase tracking-wider hidden sm:inline">Auto</span>
               <Switch
                 checked={autoPlayVideo}
-                onCheckedChange={onToggleAutoPlayVideo}
+                onCheckedChange={(checked) => {
+                  onToggleAutoPlayVideo()
+                  toast({
+                    title: checked ? "Autoplay enabled" : "Autoplay disabled",
+                    description: checked ? "Videos will play automatically on page load" : "Videos will not autoplay on page load",
+                    variant: "default",
+                  })
+                }}
                 aria-label="Toggle auto-play video on page load"
                 className="scale-90"
               />
@@ -507,12 +515,19 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
           )}
 
           {hasNextVideo && onToggleAutoPlayNext && (
-            <div className="flex items-center gap-2 px-3 py-2 bg-amber-500 dark:bg-amber-600 border-2 border-white text-black dark:text-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.4)] hover:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.4)] transition-all">
+            <div className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--warning))] hover:bg-[hsl(var(--warning))]/90 border-3 border-[hsl(var(--border))] text-[hsl(var(--foreground))] shadow-neo hover:shadow-neo-hover transition-all">
               <SkipForward className="h-4 w-4 flex-shrink-0" />
               <span className="text-xs font-black uppercase tracking-wider hidden sm:inline">Next</span>
               <Switch
                 checked={autoPlayNext}
-                onCheckedChange={onToggleAutoPlayNext}
+                onCheckedChange={(checked) => {
+                  onToggleAutoPlayNext?.(checked)
+                  toast({
+                    title: checked ? "Auto-next enabled" : "Auto-next disabled",
+                    description: checked ? "Next video will play automatically" : "You'll choose when to play next video",
+                    variant: "default",
+                  })
+                }}
                 aria-label="Toggle autoplay next video"
                 className="scale-90"
               />
@@ -521,12 +536,12 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
         </div>
 
         {/* Right Controls - Enhanced buttons */}
-        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
           {hasNextVideo && (
             <Button
               variant="ghost"
               size="icon"
-              className="h-9 w-9 sm:h-10 sm:w-10 bg-cyan-500 hover:bg-cyan-600 dark:bg-cyan-600 dark:hover:bg-cyan-700 text-black dark:text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed rounded-none font-black"
+              className="h-9 w-9 sm:h-10 sm:w-10 bg-[hsl(var(--accent))] hover:bg-[hsl(var(--accent))]/90 text-[hsl(var(--foreground))] transition-all border-2 border-[hsl(var(--border))] shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] disabled:opacity-50 disabled:cursor-not-allowed rounded-none font-black"
               onClick={onNextVideo}
               disabled={!canAccessNextVideo}
               title={nextVideoTitle}
@@ -542,7 +557,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-9 w-9 sm:h-10 sm:w-10 bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.2)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
+                className="h-9 w-9 sm:h-10 sm:w-10 bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 text-[hsl(var(--foreground))] transition-all border-2 border-[hsl(var(--border))] shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none hidden sm:flex"
                 aria-label="Playback speed"
               >
                 <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -550,20 +565,20 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="w-40 bg-black dark:bg-gray-900 border-4 border-white text-white shadow-[8px_8px_0px_0px_rgba(255,255,255,1)] p-0"
+              className="w-40 bg-[hsl(var(--surface))] border-4 border-[hsl(var(--border))] text-[hsl(var(--foreground))] shadow-neo-heavy p-0"
             >
-              <div className="px-4 py-3 text-xs font-black border-b-4 border-white uppercase tracking-wider">
+              <div className="px-4 py-3 text-xs font-black border-b-4 border-[hsl(var(--border))] uppercase tracking-wider">
                 Speed
               </div>
               {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
                 <DropdownMenuItem
                   key={speed}
                   onClick={() => onPlaybackRateChange(speed)}
-                  className="text-white hover:bg-white hover:text-black flex justify-between items-center font-black px-4 py-3 cursor-pointer border-b-2 border-white/20 last:border-0"
+                  className="hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--foreground))] flex justify-between items-center font-black px-4 py-3 cursor-pointer border-b-2 border-[hsl(var(--border))]/20 last:border-0 focus:bg-[hsl(var(--accent))]"
                 >
                   <span>{speed === 1 ? "Normal" : `${speed}x`}</span>
                   {playbackRate === speed && (
-                    <div className="w-3 h-3 bg-white border-2 border-black" />
+                    <div className="w-3 h-3 bg-[hsl(var(--primary))] border-2 border-[hsl(var(--border))]" />
                   )}
                 </DropdownMenuItem>
               ))}
@@ -577,8 +592,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
               size="icon"
               onClick={onToggleNotesPanel}
               className={cn(
-                "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white relative hidden sm:flex shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-                notesPanelOpen ? "bg-lime-500 dark:bg-lime-600 text-black dark:text-white" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
+                "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-[hsl(var(--border))] relative hidden sm:flex shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
+                notesPanelOpen ? "bg-[hsl(var(--success))] text-[hsl(var(--foreground))]" : "bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 text-[hsl(var(--foreground))]",
               )}
               aria-label="Notes"
             >
@@ -587,7 +602,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
-                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-600 dark:bg-red-700 text-[10px] text-white font-black flex items-center justify-center border-2 border-black"
+                  className="absolute -top-1 -right-1 w-5 h-5 bg-[hsl(var(--error))] text-[10px] text-[hsl(var(--primary-foreground))] font-black flex items-center justify-center border-2 border-[hsl(var(--border))]"
                 >
                   {notesCount > 9 ? "9+" : notesCount}
                 </motion.div>
@@ -602,8 +617,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
               size="icon"
               onClick={onToggleBookmarkPanel}
               className={cn(
-                "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white hidden sm:flex shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-                bookmarkPanelOpen ? "bg-yellow-400 dark:bg-yellow-500 text-black" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
+                "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-[hsl(var(--border))] hidden sm:flex shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
+                bookmarkPanelOpen ? "bg-[hsl(var(--warning))] text-[hsl(var(--foreground))]" : "bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 text-[hsl(var(--foreground))]",
               )}
               aria-label="Bookmarks"
             >
@@ -618,8 +633,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
               size="icon"
               onClick={onPictureInPicture}
               className={cn(
-                "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white hidden sm:flex shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-                isPiPActive ? "bg-fuchsia-500 dark:bg-fuchsia-600 text-black dark:text-white" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
+                "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-[hsl(var(--border))] hidden sm:flex shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
+                isPiPActive ? "bg-[hsl(var(--secondary))] text-[hsl(var(--foreground))]" : "bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 text-[hsl(var(--foreground))]",
               )}
               aria-label="Picture-in-Picture"
             >
@@ -634,8 +649,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
               size="icon"
               onClick={onToggleTheaterMode}
               className={cn(
-                "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white hidden sm:flex shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-                isTheaterMode ? "bg-purple-600 dark:bg-purple-700 text-white" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
+                "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-[hsl(var(--border))] hidden sm:flex shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
+                isTheaterMode ? "bg-[hsl(var(--accent))] text-[hsl(var(--foreground))]" : "bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 text-[hsl(var(--foreground))]",
               )}
               aria-label="Theater mode"
             >
@@ -649,12 +664,12 @@ const PlayerControls: React.FC<PlayerControlsProps> = (props) => {
             size="icon"
             onClick={onToggleFullscreen}
             className={cn(
-              "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-white shadow-[2px_2px_0px_0px_rgba(255,255,255,0.3)] hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
-              isFullscreen ? "bg-white dark:bg-gray-100 text-black" : "bg-gray-700 hover:bg-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700 text-white",
+              "h-9 w-9 sm:h-10 sm:w-10 transition-all border-2 border-[hsl(var(--border))] shadow-neo-sm hover:translate-x-[-1px] hover:translate-y-[-1px] rounded-none",
+              isFullscreen ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]" : "bg-[hsl(var(--muted))] hover:bg-[hsl(var(--muted))]/80 text-[hsl(var(--foreground))]",
             )}
             aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
-                        {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
+            {isFullscreen ? <Minimize className="h-4 w-4 sm:h-5 sm:w-5" /> : <Maximize className="h-4 w-4 sm:h-5 sm:w-5" />}
           </Button>
         </div>
       </div>

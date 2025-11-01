@@ -29,20 +29,22 @@ export function MobilePlaylistToggle({
   onToggle,
 }: MobilePlaylistToggleProps) {
   return (
-    <div className="xl:hidden border-b-4 border-black dark:border-white bg-white dark:bg-gray-900">
-      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5">
+    <div className="xl:hidden border-b-4 border-[hsl(var(--border))] bg-[hsl(var(--surface))]">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         <Button
           variant="neutral"
           onClick={onToggle}
-          className="w-full justify-between h-12 sm:h-14 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-gray-800 dark:to-gray-800 border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all font-black rounded-none group"
+          className="w-full justify-between h-12 sm:h-14 bg-[hsl(var(--accent))]/10 hover:bg-[hsl(var(--accent))]/20 border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover hover:translate-x-[-1px] hover:translate-y-[-1px] transition-all font-black rounded-none group focus-visible:ring-4 focus-visible:ring-[hsl(var(--accent))]/50 focus-visible:outline-none"
+          aria-label={isOpen ? "Close playlist" : "Open playlist"}
+          aria-expanded={isOpen}
         >
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-cyan-500 dark:bg-cyan-600 border-3 border-black dark:border-white flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-              <BookOpen className="h-4 w-4 text-black dark:text-white" />
+            <div className="w-8 h-8 bg-[hsl(var(--accent))] border-3 border-[hsl(var(--border))] flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+              <BookOpen className="h-4 w-4 text-[hsl(var(--foreground))]" />
             </div>
             <div className="text-left">
-              <div className="font-black uppercase text-xs text-black dark:text-white">Course Content</div>
-              <div className="text-[10px] font-bold text-gray-600 dark:text-gray-400 line-clamp-1">
+              <div className="font-black uppercase text-xs text-[hsl(var(--foreground))]">Course Content</div>
+              <div className="text-[10px] font-bold text-[hsl(var(--foreground))]/60 line-clamp-1">
                 {currentChapter?.title || "Select a chapter"}
               </div>
             </div>
@@ -54,7 +56,7 @@ export function MobilePlaylistToggle({
               total={totalVideos}
             />
             <ChevronDown className={cn(
-              "h-4 w-4 text-black dark:text-white transition-transform duration-200",
+              "h-4 w-4 text-[hsl(var(--foreground))] transition-transform duration-200",
               isOpen && "rotate-180"
             )} />
           </div>

@@ -133,7 +133,7 @@ export function renderCourseDashboard(
   }
   
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-foreground transition-colors duration-200">
+    <div className="min-h-screen bg-[hsl(var(--background))] text-[hsl(var(--foreground))] transition-colors duration-200">
       {/* ===== SHARED COURSE BANNER ===== */}
       <SharedCourseBanner isShared={Boolean(course.isShared)} />
 
@@ -172,7 +172,7 @@ export function renderCourseDashboard(
         />
       )}
 
-      <main className={cn("transition-all duration-200", state.isTheaterMode && "bg-black")}>
+      <main className={cn("transition-all duration-200", state.isTheaterMode && "bg-[hsl(var(--background))]")}>
         <div
           className={cn(
             "mx-auto transition-all duration-200",
@@ -199,23 +199,23 @@ export function renderCourseDashboard(
               {/* ===== VIDEO PLAYER ===== */}
               <div className="relative group">
                 {isPiPActive ? (
-                  <div className="bg-gradient-to-b from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 border-4 border-black dark:border-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] overflow-hidden">
-                    <div className="aspect-video bg-gray-300 dark:bg-gray-700 flex items-center justify-center">
+                  <div className="bg-gradient-to-b from-[hsl(var(--muted))] to-[hsl(var(--muted))]/80 border-4 border-[hsl(var(--border))] shadow-neo overflow-hidden">
+                    <div className="aspect-video bg-[hsl(var(--muted))] flex items-center justify-center">
                       <div className="text-center p-6">
-                        <div className="w-16 h-16 mx-auto mb-3 bg-cyan-500 dark:bg-cyan-600 border-4 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center group-hover:scale-110 transition-transform">
-                          <Play className="h-8 w-8 text-black dark:text-white fill-black dark:fill-white" />
+                        <div className="w-16 h-16 mx-auto mb-3 bg-[hsl(var(--accent))] border-4 border-[hsl(var(--border))] shadow-neo flex items-center justify-center group-hover:scale-110 transition-transform">
+                          <Play className="h-8 w-8 text-[hsl(var(--foreground))] fill-current" />
                         </div>
-                        <h3 className="text-lg font-black mb-1.5 uppercase tracking-tight text-black dark:text-white">
+                        <h3 className="text-lg font-black mb-1.5 uppercase tracking-tight text-[hsl(var(--foreground))]">
                           Picture-in-Picture Active
                         </h3>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 font-bold">
+                        <p className="text-sm text-[hsl(var(--foreground))]/80 font-bold">
                           Video playing in separate window
                         </p>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="w-full aspect-video bg-black border-4 border-black dark:border-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] dark:shadow-[6px_6px_0px_0px_rgba(255,255,255,0.3)] overflow-hidden">
+                  <div className="w-full aspect-video bg-[hsl(var(--background))] border-4 border-[hsl(var(--border))] shadow-neo overflow-hidden">
                     <VideoPlayer
                       youtubeVideoId={currentVideoId || ""}
                       chapterId={currentChapter?.id ? String(currentChapter.id) : ""}
@@ -263,38 +263,38 @@ export function renderCourseDashboard(
 
               {/* ===== CHAPTER INFO CARD ===== */}
               {!state.isTheaterMode && currentChapter && (
-                <div className="bg-white dark:bg-gray-900 border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] p-3 sm:p-4 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow duration-200 rounded-none">
+                <section className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo p-4 hover:shadow-neo-hover transition-shadow duration-200 rounded-none" aria-labelledby="current-chapter-title">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <h2 className="font-black text-base sm:text-lg uppercase tracking-tight text-black dark:text-white mb-1.5">
+                      <h2 id="current-chapter-title" className="font-black text-base sm:text-lg uppercase tracking-tight text-[hsl(var(--foreground))] mb-2">
                         {currentChapter.title}
                       </h2>
                       {currentChapter.description && (
-                        <p className="text-gray-700 dark:text-gray-300 font-medium text-sm line-clamp-2 leading-relaxed">
+                        <p className="text-[hsl(var(--foreground))]/80 font-medium text-sm line-clamp-2 leading-relaxed">
                           {currentChapter.description}
                         </p>
                       )}
                     </div>
                     {videoDurations[currentVideoId || ""] && (
-                      <div className="bg-gradient-to-br from-yellow-300 to-yellow-400 dark:from-yellow-400 dark:to-yellow-500 border-3 border-black dark:border-white px-3 py-2 font-black text-sm whitespace-nowrap flex-shrink-0 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-shadow rounded-none">
-                        <div className="text-black dark:text-black">{formatSeconds(videoDurations[currentVideoId || ""])}</div>
+                      <div className="bg-[hsl(var(--warning))] border-3 border-[hsl(var(--border))] px-3 py-2 font-black text-sm whitespace-nowrap flex-shrink-0 shadow-neo hover:shadow-neo-hover transition-shadow rounded-none" aria-label={`Duration: ${formatSeconds(videoDurations[currentVideoId || ""])}`}>
+                        <div className="text-[hsl(var(--foreground))]">{formatSeconds(videoDurations[currentVideoId || ""])}</div>
                       </div>
                     )}
                   </div>
-                </div>
+                </section>
               )}
 
               {/* Sign-in prompt for guests */}
               {!user && !state.isTheaterMode && (
-                <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 border-3 border-blue-300 dark:border-blue-600 p-3 sm:p-4 shadow-[3px_3px_0px_0px_rgba(0,0,0,0.3)] rounded-none hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,0.5)] transition-shadow duration-200">
+                <div className="bg-[hsl(var(--accent))]/10 border-3 border-[hsl(var(--accent))]/30 p-4 shadow-neo rounded-none hover:shadow-neo-hover transition-shadow duration-200">
                   <ContextualSignInPrompt action="continue_course" courseId={String(course.id)} />
                 </div>
               )}
 
               {/* Course details tabs */}
               {!state.isTheaterMode && (
-                <div className="bg-white dark:bg-gray-900 border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow duration-200 rounded-none overflow-hidden">
-                  <div className="p-3 sm:p-4">
+                <div className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover transition-shadow duration-200 rounded-none overflow-hidden">
+                  <div className="p-4">
                     <MemoizedCourseDetailsTabs
                       course={course}
                       currentChapter={currentChapter}
@@ -307,8 +307,8 @@ export function renderCourseDashboard(
 
               {/* Reviews section */}
               {!state.isTheaterMode && (
-                <div className="bg-white dark:bg-gray-900 border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow duration-200 rounded-none overflow-hidden">
-                  <div className="p-3 sm:p-4">
+                <div className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover transition-shadow duration-200 rounded-none overflow-hidden">
+                  <div className="p-4">
                     <ReviewsSection slug={course.slug} />
                   </div>
                 </div>
@@ -317,15 +317,15 @@ export function renderCourseDashboard(
 
             {/* Desktop sidebar */}
             {!state.sidebarCollapsed && !state.isTheaterMode && (
-              <div className="hidden xl:block space-y-3 min-w-0">
-                <div className="bg-white dark:bg-gray-900 border-3 border-black dark:border-white shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] dark:shadow-[3px_3px_0px_0px_rgba(255,255,255,0.3)] overflow-hidden sticky top-20 rounded-none hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-shadow duration-200">
+              <div className="hidden xl:block space-y-4 min-w-0">
+                <div className="bg-[hsl(var(--surface))] border-3 border-[hsl(var(--border))] shadow-neo overflow-hidden sticky top-20 rounded-none hover:shadow-neo-hover transition-shadow duration-200">
                   {sidebarCourse.chapters.length === 0 ? (
                     <div className="p-6 text-center">
-                      <div className="w-14 h-14 mx-auto mb-3 bg-gray-100 dark:bg-gray-800 border-3 border-black dark:border-white flex items-center justify-center rounded-none shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)]">
-                        <BookOpen className="h-7 w-7 text-gray-400 dark:text-gray-600" />
+                      <div className="w-14 h-14 mx-auto mb-3 bg-[hsl(var(--muted))] border-3 border-[hsl(var(--border))] flex items-center justify-center rounded-none shadow-neo-sm">
+                        <BookOpen className="h-7 w-7 text-[hsl(var(--foreground))]/60" />
                       </div>
-                      <h3 className="font-black text-base mb-1.5 uppercase text-black dark:text-white">No Videos Yet</h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 font-bold">
+                      <h3 className="font-black text-base mb-2 uppercase text-[hsl(var(--foreground))]">No Videos Yet</h3>
+                      <p className="text-sm text-[hsl(var(--foreground))]/60 font-bold">
                         This course doesn't have video content yet.
                       </p>
                     </div>
@@ -377,13 +377,13 @@ export function renderCourseDashboard(
 
       {/* ===== UNLOCK PREMIUM CTA ===== */}
       {!userSubscription && !state.isTheaterMode && (
-        <div className="fixed bottom-5 right-5 z-40 transition-all duration-200 hover:scale-105 hover:-translate-y-1">
+        <div className="fixed bottom-6 right-6 z-40 transition-all duration-200 hover:scale-105 hover:-translate-y-1">
           <Button
             size="lg"
             onClick={() => (window.location.href = "/dashboard/subscription")}
-            className="bg-gradient-to-br from-yellow-300 to-yellow-400 hover:from-yellow-400 hover:to-yellow-500 text-black font-black border-3 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] transition-all uppercase px-5 py-2.5 text-sm rounded-none group"
+            className="bg-[hsl(var(--warning))] hover:bg-[hsl(var(--warning))]/90 text-[hsl(var(--foreground))] font-black border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-neo-active transition-all uppercase px-6 py-3 text-sm rounded-none group"
           >
-            <Zap className="h-4 w-4 mr-1.5 fill-black text-black group-hover:scale-110 transition-transform" />
+            <Zap className="h-4 w-4 mr-2 fill-current group-hover:scale-110 transition-transform" />
             <span className="hidden sm:inline">Unlock All Content</span>
             <span className="sm:hidden">Unlock</span>
           </Button>
@@ -402,21 +402,21 @@ export function renderCourseDashboard(
 
       {/* ===== AUTOPLAY INDICATOR ===== */}
       {!state.isTheaterMode && (
-        <div className="fixed bottom-5 left-5 z-40 transition-all duration-200">
+        <div className="fixed bottom-6 left-6 z-40 transition-all duration-200">
           <button
             onClick={handleAutoplayToggle}
             className={cn(
-              "px-3.5 py-2 font-black text-xs uppercase border-3 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.8)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[-1px] hover:translate-y-[-1px] active:shadow-[2px_2px_0px_0px_rgba(0,0,0,0.5)] transition-all rounded-none tracking-wider",
+              "px-4 py-2.5 font-black text-xs uppercase border-3 border-[hsl(var(--border))] shadow-neo hover:shadow-neo-hover hover:translate-x-[-1px] hover:translate-y-[-1px] active:shadow-neo-active transition-all rounded-none tracking-wider",
               state.autoplayMode
-                ? "bg-lime-400 hover:bg-lime-500 text-black border-black"
-                : "bg-gray-200 hover:bg-gray-300 text-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-300 dark:border-white"
+                ? "bg-[hsl(var(--success))] text-[hsl(var(--foreground))]"
+                : "bg-[hsl(var(--muted))] text-[hsl(var(--foreground))]/60"
             )}
             aria-label={state.autoplayMode ? "Disable autoplay" : "Enable autoplay"}
           >
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <div className={cn(
                 "w-2 h-2 rounded-full transition-all",
-                state.autoplayMode ? "bg-black animate-pulse" : "bg-gray-500"
+                state.autoplayMode ? "bg-[hsl(var(--foreground))] animate-pulse" : "bg-[hsl(var(--foreground))]/40"
               )} />
               <span>Autoplay: {state.autoplayMode ? "ON" : "OFF"}</span>
             </div>
@@ -428,7 +428,7 @@ export function renderCourseDashboard(
       {state.isTheaterMode && (
         <button
           onClick={() => dispatch2({ type: "SET_THEATER_MODE", payload: false })}
-          className="fixed top-4 right-4 z-50 bg-red-600 hover:bg-red-700 text-white px-4 py-3 border-3 border-white shadow-[4px_4px_0px_0px_rgba(255,255,255,1)] hover:shadow-[6px_6px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] transition-all font-black uppercase text-sm rounded-none group"
+          className="fixed top-4 right-4 z-50 bg-[hsl(var(--error))] hover:bg-[hsl(var(--error))]/90 text-[hsl(var(--primary-foreground))] px-4 py-3 border-3 border-[hsl(var(--border))] shadow-neo-heavy hover:shadow-neo hover:translate-x-[-2px] hover:translate-y-[-2px] active:shadow-neo-active transition-all font-black uppercase text-sm rounded-none group"
           aria-label="Exit Theater Mode"
         >
           <div className="flex items-center gap-2">
@@ -442,12 +442,12 @@ export function renderCourseDashboard(
       {/* ===== COMPLETION CELEBRATION BANNER ===== */}
       {enhancedCourseStats.progressPercentage === 100 && !state.isTheaterMode && (
         <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
-          <div className="bg-gradient-to-r from-yellow-300 via-yellow-400 to-yellow-300 border-3 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] px-5 py-3.5 rounded-none">
+          <div className="bg-[hsl(var(--warning))] border-3 border-[hsl(var(--border))] shadow-neo-heavy px-6 py-4 rounded-none">
             <div className="flex items-center gap-3">
-              <Award className="h-8 w-8 text-black" />
+              <Award className="h-8 w-8 text-[hsl(var(--foreground))]" />
               <div className="flex-1">
-                <p className="font-black text-lg uppercase text-black tracking-tight">🎉 Course Complete!</p>
-                <p className="text-xs font-bold text-black/80">You've mastered this course - download your certificate!</p>
+                <p className="font-black text-lg uppercase text-[hsl(var(--foreground))] tracking-tight">🎉 Course Complete!</p>
+                <p className="text-xs font-bold text-[hsl(var(--foreground))]/80">You've mastered this course - download your certificate!</p>
               </div>
             </div>
           </div>
